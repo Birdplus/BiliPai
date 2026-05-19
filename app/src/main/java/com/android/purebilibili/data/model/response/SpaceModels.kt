@@ -549,6 +549,7 @@ data class SpaceDynamicData(
 
 @kotlinx.serialization.Serializable
 data class SpaceDynamicItem(
+    val basic: DynamicBasic? = null,
     val id_str: String = "",
     val modules: SpaceDynamicModules = SpaceDynamicModules(),
     val type: String = "",  // DYNAMIC_TYPE_AV, DYNAMIC_TYPE_DRAW, DYNAMIC_TYPE_WORD 等
@@ -681,6 +682,7 @@ data class SpaceDynamicStat(
 
 @kotlinx.serialization.Serializable
 data class SpaceDynamicCount(
+    @Serializable(with = FlexibleIntSerializer::class)
     val count: Int = 0,
     val forbidden: Boolean = false
 )

@@ -197,6 +197,11 @@ class SpaceModelsParsingTest {
               "data": {
                 "items": [
                   {
+                    "basic": {
+                      "comment_id_str": "1200069469486972932",
+                      "comment_type": 17,
+                      "rid_str": "1200069469486972932"
+                    },
                     "id_str": "1200069469486972932",
                     "type": "DYNAMIC_TYPE_ARTICLE",
                     "modules": {
@@ -214,6 +219,20 @@ class SpaceModelsParsingTest {
                             "jump_url": "https://www.bilibili.com/opus/1200069469486972932"
                           }
                         }
+                      },
+                      "module_stat": {
+                        "comment": {
+                          "count": "5",
+                          "forbidden": false
+                        },
+                        "forward": {
+                          "count": 2,
+                          "forbidden": false
+                        },
+                        "like": {
+                          "count": "1.2万",
+                          "forbidden": false
+                        }
                       }
                     }
                   }
@@ -223,12 +242,19 @@ class SpaceModelsParsingTest {
         """.trimIndent()
 
         val response = json.decodeFromString<SpaceDynamicResponse>(payload)
-        val article = response.data?.items?.single()
+        val item = response.data?.items?.single()
+        val article = item
             ?.modules
             ?.module_dynamic
             ?.major
             ?.article
 
+        assertEquals("1200069469486972932", item?.basic?.comment_id_str)
+        assertEquals(17, item?.basic?.comment_type)
+        assertEquals("1200069469486972932", item?.basic?.rid_str)
+        assertEquals(5, item?.modules?.module_stat?.comment?.count)
+        assertEquals(2, item?.modules?.module_stat?.forward?.count)
+        assertEquals(12000, item?.modules?.module_stat?.like?.count)
         assertEquals(1200069469486972932L, article?.id)
         assertEquals("长图文标题", article?.title)
         assertEquals("完整长图文摘要", article?.desc)

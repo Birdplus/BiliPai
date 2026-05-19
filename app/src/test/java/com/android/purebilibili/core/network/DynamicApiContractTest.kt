@@ -80,6 +80,23 @@ class DynamicApiContractTest {
     }
 
     @Test
+    fun getSpaceDynamic_requestsFeatureFlagsForOpusTextAndCommentCounts() {
+        val method = SpaceApi::class.java.methods.first { it.name == "getSpaceDynamic" }
+        val get = method.getAnnotation(GET::class.java)
+        assertEquals("x/polymer/web-dynamic/v1/feed/space", get?.value)
+
+        val queryNames = method.parameterAnnotations
+            .mapNotNull { annotations ->
+                annotations.filterIsInstance<Query>().firstOrNull()?.value
+            }
+
+        assertTrue("features" in queryNames)
+        assertTrue(SPACE_DYNAMIC_FEATURES.contains("itemOpusStyle"))
+        assertTrue(SPACE_DYNAMIC_FEATURES.contains("opusBigCover"))
+        assertTrue(SPACE_DYNAMIC_FEATURES.contains("commentsNewVersion"))
+    }
+
+    @Test
     fun getUserDynamicFeed_usesDynamicFeedAllEndpointAndQueryMap() {
         val method = DynamicApi::class.java.methods.first { it.name == "getUserDynamicFeed" }
         val get = method.getAnnotation(GET::class.java)

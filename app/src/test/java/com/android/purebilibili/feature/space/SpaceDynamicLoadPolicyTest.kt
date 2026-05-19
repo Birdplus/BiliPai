@@ -12,6 +12,11 @@ import com.android.purebilibili.data.model.response.SpaceDynamicArticle
 import com.android.purebilibili.data.model.response.SpaceDynamicOpus
 import com.android.purebilibili.data.model.response.SpaceDynamicOpusSummary
 import com.android.purebilibili.data.model.response.DynamicMajorBadge
+import com.android.purebilibili.data.model.response.DynamicBasic
+import com.android.purebilibili.data.model.response.SpaceDynamicCount
+import com.android.purebilibili.data.model.response.SpaceDynamicStat
+import com.android.purebilibili.feature.dynamic.DynamicCommentTarget
+import com.android.purebilibili.feature.dynamic.resolveDynamicCommentTargets
 import com.android.purebilibili.feature.dynamic.components.resolveDynamicArchiveBadgeLabel
 import com.android.purebilibili.feature.dynamic.components.DynamicCardMediaAction
 import com.android.purebilibili.feature.dynamic.components.resolveDynamicCardMediaAction
@@ -189,6 +194,11 @@ class SpaceDynamicLoadPolicyTest {
                 SpaceDynamicItem(
                     id_str = "1200069469486972932",
                     type = "DYNAMIC_TYPE_ARTICLE",
+                    basic = DynamicBasic(
+                        comment_id_str = "1200069469486972932",
+                        comment_type = 17,
+                        rid_str = "1200069469486972932"
+                    ),
                     modules = SpaceDynamicModules(
                         module_dynamic = SpaceDynamicContent(
                             major = SpaceDynamicMajor(
@@ -201,6 +211,11 @@ class SpaceDynamicLoadPolicyTest {
                                     jump_url = "https://www.bilibili.com/opus/1200069469486972932"
                                 )
                             )
+                        ),
+                        module_stat = SpaceDynamicStat(
+                            comment = SpaceDynamicCount(count = 5),
+                            forward = SpaceDynamicCount(count = 2),
+                            like = SpaceDynamicCount(count = 32)
                         )
                     )
                 )
@@ -208,10 +223,20 @@ class SpaceDynamicLoadPolicyTest {
         ).first()
 
         val article = mapped.modules.module_dynamic?.major?.article
+        val desc = mapped.modules.module_dynamic?.desc
+        val stat = mapped.modules.module_stat
         val mediaAction = assertIs<DynamicCardMediaAction.PreviewImages>(
             resolveDynamicCardMediaAction(mapped, clickedIndex = 0)
         )
 
+        assertEquals(
+            listOf(DynamicCommentTarget(oid = 1200069469486972932L, type = 17)),
+            resolveDynamicCommentTargets(mapped)
+        )
+        assertEquals("长图文标题\n完整长图文摘要", desc?.text)
+        assertEquals(5, stat?.comment?.count)
+        assertEquals(2, stat?.forward?.count)
+        assertEquals(32, stat?.like?.count)
         assertEquals(1200069469486972932L, article?.id)
         assertEquals("长图文标题", article?.title)
         assertEquals("完整长图文摘要", article?.desc)

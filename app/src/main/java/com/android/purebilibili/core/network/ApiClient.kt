@@ -1142,6 +1142,9 @@ private const val DYNAMIC_FEED_FEATURES =
 private const val DYNAMIC_DETAIL_FEATURES =
     "itemOpusStyle,listOnlyfans,opusBigCover,commentsNewVersion,onlyfansVote,onlyfansAssetsV2,decorationCard,forwardListHidden,ugcDelete,htmlNewStyle"
 
+internal const val SPACE_DYNAMIC_FEATURES =
+    "itemOpusStyle,listOnlyfans,opusBigCover,commentsNewVersion,onlyfansVote,onlyfansAssetsV2,decorationCard,forwardListHidden,ugcDelete"
+
 interface DynamicApi {
     //  添加 features 参数以获取 rich_text_nodes 表情数据
     @GET("x/polymer/web-dynamic/v1/feed/all")
@@ -1315,7 +1318,8 @@ interface SpaceApi {
     suspend fun getSpaceDynamic(
         @Query("host_mid") hostMid: Long,
         @Query("offset") offset: String = "",
-        @Query("timezone_offset") timezoneOffset: Int = -480
+        @Query("timezone_offset") timezoneOffset: Int = -480,
+        @Query("features") features: String = SPACE_DYNAMIC_FEATURES
     ): com.android.purebilibili.data.model.response.SpaceDynamicResponse
     
     //  [New] Get User Audio List
