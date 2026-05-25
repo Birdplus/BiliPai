@@ -68,6 +68,16 @@ class HomeFeedScrollStatePersistenceStructureTest {
         assertFalse(pagerPageSource.contains("onRefresh = { viewModel.refresh() }"))
     }
 
+    @Test
+    fun `home follow refresh preserves dynamic update baseline for incremental content`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/HomeViewModel.kt")
+        val followFeedSource = source
+            .substringAfter("private suspend fun fetchFollowFeed")
+            .substringBefore("private fun videoItemKey")
+
+        assertFalse(followFeedSource.contains("DynamicRepository.resetPagination"))
+    }
+
     private fun loadSource(path: String): String {
         val normalizedPath = path.removePrefix("app/")
         val sourceFile = listOf(

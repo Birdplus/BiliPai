@@ -1199,9 +1199,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         if (!isLoadMore) {
             fetchUserInfo()
-            com.android.purebilibili.data.repository.DynamicRepository.resetPagination(
-                com.android.purebilibili.data.repository.DynamicFeedScope.HOME_FOLLOW
-            )
         }
         
         val result = com.android.purebilibili.data.repository.DynamicRepository.getDynamicFeed(
