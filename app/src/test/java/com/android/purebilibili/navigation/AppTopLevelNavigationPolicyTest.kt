@@ -316,6 +316,24 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
+    fun unresolvedMainHostUsesCurrentBottomPagerItemAsActiveBottomRoute() {
+        assertEquals(
+            ScreenRoutes.Home.route,
+            resolveActiveBottomTabRoute(
+                currentKey = null,
+                currentBottomItem = BottomNavItem.HOME
+            )
+        )
+        assertEquals(
+            ScreenRoutes.Dynamic.route,
+            resolveActiveBottomTabRoute(
+                currentKey = BiliPaiNavKey.Unknown("main_host"),
+                currentBottomItem = BottomNavItem.DYNAMIC
+            )
+        )
+    }
+
+    @Test
     fun directTopLevelKeyUsesItsOwnRouteForBottomBarDestination() {
         assertEquals(
             ScreenRoutes.Home.route,

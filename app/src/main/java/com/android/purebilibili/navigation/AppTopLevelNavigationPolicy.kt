@@ -96,11 +96,11 @@ internal fun resolveActiveBottomTabRoute(
     currentKey: BiliPaiNavKey?,
     currentBottomItem: BottomNavItem
 ): String? {
-    return if (currentKey == BiliPaiNavKey.MainHost) {
-        currentBottomItem.route
-    } else {
-        currentKey?.toLegacyRoute()
+    if (currentKey == null || currentKey == BiliPaiNavKey.MainHost) {
+        return currentBottomItem.route
     }
+    val route = currentKey.toLegacyRoute()
+    return if (route == BiliPaiNavKey.MainHost.routeBase) currentBottomItem.route else route
 }
 
 internal fun shouldShowBottomBarForNavigation(
