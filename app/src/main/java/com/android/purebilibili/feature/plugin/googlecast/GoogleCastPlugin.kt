@@ -23,7 +23,7 @@ class GoogleCastPlugin : CastPluginApi {
     override val name = "Google Cast"
     override val description = "将视频投屏到 Chromecast / Google Cast 设备"
     override val version = "0.1.0"
-    override val author = "BiliPai项目组"
+    override val author = "Leko (lekoOwO)"
     override val icon: ImageVector = Icons.Rounded.Cast
     override val capabilityManifest: PluginCapabilityManifest = PluginCapabilityManifest(
         pluginId = id,

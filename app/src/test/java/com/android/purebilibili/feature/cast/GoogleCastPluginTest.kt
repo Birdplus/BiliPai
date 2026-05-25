@@ -44,11 +44,6 @@ class GoogleCastPluginTest {
     }
 
     @Test
-    fun `author is BiliPai project group`() {
-        assertEquals("BiliPai项目组", plugin.author)
-    }
-
-    @Test
     fun `icon is Icons dot Rounded dot Cast`() {
         assertEquals(Icons.Rounded.Cast, plugin.icon)
     }

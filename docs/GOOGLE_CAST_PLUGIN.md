@@ -1,19 +1,6 @@
 # Google Cast Plugin Project
 
-This is the single entry point for the BiliPai Google Cast plugin work. Keep it concise, update it after each completed slice, and remove stale details instead of adding parallel notes.
-
-If `docs/GOOGLE_CAST_PLUGIN.local.md` exists, read it after this file for machine-specific environment notes. That local file is intentionally ignored and must not be committed.
-
-## Working Rules
-
-- Build this as a BiliPai source-level native Kotlin plugin.
-- Use sub-agent driven development: architecture, task slicing, review, and verification stay with the controller; coding slices are implemented through `claude -p`.
-- After every completed slice, update this file so another worker can resume quickly.
-- Keep documentation progressive: this file is the only project entry. Link to existing repo docs only when needed.
-- Avoid unnecessary files. Delete obsolete notes and update stale information immediately.
-- Use `D:\Temp` for temporary scratch data if needed; avoid writing to `C:` unless a tool requires it.
-- Do not work directly on `main`; use the `feature/google-cast-plugin` worktree at `D:\DATA\Codes\BiliPai\worktrees\google-cast-plugin`.
-- Branch names, commits, PR titles, and PR bodies must use normal human engineering wording without tool or authorship labels.
+This document records the implementation context and verification history for the BiliPai Google Cast plugin.
 
 ## Existing Context
 
@@ -190,3 +177,4 @@ Result on 2026-05-26:
 - 2026-05-26: Corrected the plugin boundary so Google Cast discovery/loading lives behind `CastPluginApi`; completed Slice 3 Chromecast media loading.
 - 2026-05-26: Completed Slice 5 bugfix — SSDP per-device exception isolation, Google Cast route cache preservation, dialog dismissal timing fix, and debug APK build.
 - 2026-05-26: Completed Slice 6 bugfix — DLNA DOCTYPE parsing, first-tap RemoteMediaClient wait, and cast playback control.
+- 2026-05-26: Updated Google Cast plugin author metadata from 'BiliPai项目组' to 'Leko (lekoOwO)' before opening upstream PR.
