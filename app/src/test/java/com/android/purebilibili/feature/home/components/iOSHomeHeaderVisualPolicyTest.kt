@@ -42,13 +42,15 @@ class iOSHomeHeaderVisualPolicyTest {
             .substringAfter("Spacer(modifier = Modifier.width(resolveHomeTopEdgeControlGap")
             .substringBefore("if (drawTopSearchDivider)")
 
-        assertTrue(layout.offsetX > 0.dp)
-        assertTrue(layout.offsetY < 0.dp)
+        assertEquals(0.dp, layout.offsetX)
+        assertEquals(0.dp, layout.offsetY)
+        assertEquals(9.dp, layout.reservedEndWidth)
         assertEquals(18.dp, layout.minWidth)
         assertEquals(18.dp, layout.minHeight)
         assertEquals(5.dp, layout.horizontalPadding)
         assertEquals(1.dp, layout.verticalPadding)
-        assertTrue(topRightButtonSource.contains(".size(resolveHomeTopSettingsButtonSize"))
+        assertTrue(topRightButtonSource.contains("resolveHomeTopRightActionSlotWidth"))
+        assertTrue(topRightButtonSource.contains(".size(topRightActionButtonSize)"))
         assertTrue(topRightButtonSource.contains("Box("))
         assertTrue(topRightButtonSource.contains(".clip(edgeButtonShape)"))
         assertTrue(topRightButtonSource.contains("topRightUnreadBadgeLayout.offsetX"))
@@ -1695,7 +1697,8 @@ class iOSHomeHeaderVisualPolicyTest {
     fun `home header settings button uses preset aware sizing`() {
         val headerSource = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/iOSHomeHeader.kt")
 
-        assertTrue(headerSource.contains(".size(resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant))"))
+        assertTrue(headerSource.contains("val topRightActionButtonSize = resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant)"))
+        assertTrue(headerSource.contains(".size(topRightActionButtonSize)"))
         assertTrue(headerSource.contains("modifier = Modifier.size(resolveHomeTopSettingsIconSize(uiPreset, androidNativeVariant))"))
         assertFalse(headerSource.contains(".size(resolveHomeTopSettingsButtonSize())"))
     }

@@ -1233,6 +1233,15 @@ internal fun resolveBottomBarIndicatorGlowAlpha(
     return maxOf(pressProgress, motionProgress).coerceIn(0f, 1f)
 }
 
+internal fun resolveBottomBarShellHighlightAlpha(
+    glassEnabled: Boolean,
+    pressProgress: Float,
+    motionProgress: Float = 0f
+): Float {
+    if (!glassEnabled) return 0f
+    return maxOf(pressProgress, motionProgress).coerceIn(0f, 1f)
+}
+
 internal fun resolveBottomBarInteractiveHighlightCenterX(
     indicatorTranslationXPx: Float,
     itemWidthPx: Float,
@@ -2925,6 +2934,11 @@ private fun KernelSuAlignedBottomBar(
                 pressProgress = effectivePressProgress,
                 motionProgress = effectiveIndicatorEffectProgress
             )
+            val shellHighlightAlpha = resolveBottomBarShellHighlightAlpha(
+                glassEnabled = glassEnabled,
+                pressProgress = effectivePressProgress,
+                motionProgress = effectiveIndicatorEffectProgress
+            )
             val isBottomBarInteractionActive = dampedDragState.isDragging ||
                 dampedDragState.isRunning ||
                 dampedDragState.pressProgress > BottomBarTransientAlphaThreshold
@@ -3065,7 +3079,7 @@ private fun KernelSuAlignedBottomBar(
                     shellProgress = backdropPresetProgress.shellProgress,
                     visiblePanelOffsetPx = presetPanelOffsets.visiblePanelOffsetPx,
                     interactiveHighlightEnabled = interactiveHighlightEnabled,
-                    indicatorGlowAlpha = indicatorGlowAlpha,
+                    shellHighlightAlpha = shellHighlightAlpha,
                     interactiveHighlightCenterXPx = interactiveHighlightCenterXPx,
                     uiSkinDecoration = uiSkinDecoration
                 ) {
@@ -3466,7 +3480,7 @@ private fun KernelSuBottomBarShell(
     shellProgress: Float,
     visiblePanelOffsetPx: Float,
     interactiveHighlightEnabled: Boolean,
-    indicatorGlowAlpha: Float,
+    shellHighlightAlpha: Float,
     interactiveHighlightCenterXPx: Float,
     uiSkinDecoration: BottomBarUiSkinDecoration?,
     content: @Composable BoxScope.() -> Unit
@@ -3499,7 +3513,7 @@ private fun KernelSuBottomBarShell(
                 )
                 .bottomBarInteractiveHighlight(
                     enabled = glassEnabled && interactiveHighlightEnabled,
-                    alpha = indicatorGlowAlpha,
+                    alpha = shellHighlightAlpha,
                     centerXPx = interactiveHighlightCenterXPx
                 )
         )

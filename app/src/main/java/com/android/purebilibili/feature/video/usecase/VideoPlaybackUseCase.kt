@@ -131,6 +131,21 @@ internal fun resolvePlaybackBootstrapMode(
     }
 }
 
+internal fun shouldFetchRelatedVideosAfterVideoDetail(bvid: String): Boolean {
+    val normalized = bvid.trim()
+    return normalized.isBlank() || normalized.startsWith("av", ignoreCase = true)
+}
+
+internal fun resolveRelatedVideosRequestBvid(
+    requestBvid: String,
+    canonicalBvid: String
+): String {
+    val normalizedRequest = requestBvid.trim()
+    val normalizedCanonical = canonicalBvid.trim()
+    if (normalizedRequest.startsWith("BV", ignoreCase = true)) return normalizedRequest
+    return normalizedCanonical.takeIf { it.startsWith("BV", ignoreCase = true) }.orEmpty()
+}
+
 internal fun applyPlaybackIntentAfterSourceChange(
     player: Player,
     playWhenReady: Boolean
@@ -405,8 +420,21 @@ class VideoPlaybackUseCase(
                     bvid = bvid,
                     cid = cid
                 )
-                val relatedDeferred = async { 
-                    if (bvid.isNotEmpty()) VideoRepository.getRelatedVideos(bvid) else emptyList() 
+                val fetchRelatedAfterDetail = shouldFetchRelatedVideosAfterVideoDetail(bvid)
+                val relatedDeferred: kotlinx.coroutines.Deferred<List<RelatedVideo>>? = if (fetchRelatedAfterDetail) {
+                    null
+                } else {
+                    async {
+                        val relatedBvid = resolveRelatedVideosRequestBvid(
+                            requestBvid = bvid,
+                            canonicalBvid = ""
+                        )
+                        if (relatedBvid.isNotEmpty()) {
+                            VideoRepository.getRelatedVideos(relatedBvid)
+                        } else {
+                            emptyList()
+                        }
+                    }
                 }
                 val emoteMap = if (com.android.purebilibili.data.repository.shouldFetchCommentEmoteMapOnVideoLoad()) {
                     com.android.purebilibili.data.repository.CommentRepository.getEmoteMap()
@@ -458,7 +486,22 @@ class VideoPlaybackUseCase(
                     }
                 }
 
-                Triple(mergedDetailResult, relatedDeferred.await(), emoteMap)
+                val relatedVideos = relatedDeferred?.await() ?: mergedDetailResult.fold(
+                    onSuccess = { (info, _) ->
+                        val relatedBvid = resolveRelatedVideosRequestBvid(
+                            requestBvid = bvid,
+                            canonicalBvid = info.bvid
+                        )
+                        if (relatedBvid.isNotEmpty()) {
+                            VideoRepository.getRelatedVideos(relatedBvid)
+                        } else {
+                            emptyList()
+                        }
+                    },
+                    onFailure = { emptyList() }
+                )
+
+                Triple(mergedDetailResult, relatedVideos, emoteMap)
             }
             
             return detailResult.fold(

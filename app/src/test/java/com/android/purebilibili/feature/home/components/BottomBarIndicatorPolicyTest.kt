@@ -527,6 +527,28 @@ class BottomBarIndicatorPolicyTest {
     }
 
     @Test
+    fun `shell highlight follows indicator motion while dragging`() {
+        assertEquals(
+            0.86f,
+            resolveBottomBarShellHighlightAlpha(
+                glassEnabled = true,
+                pressProgress = 0.12f,
+                motionProgress = 0.86f
+            ),
+            0.001f
+        )
+        assertEquals(
+            0.72f,
+            resolveBottomBarShellHighlightAlpha(
+                glassEnabled = true,
+                pressProgress = 0.72f,
+                motionProgress = 0.18f
+            ),
+            0.001f
+        )
+    }
+
+    @Test
     fun `interactive highlight center follows indicator and panel offset`() {
         assertEquals(
             124f,

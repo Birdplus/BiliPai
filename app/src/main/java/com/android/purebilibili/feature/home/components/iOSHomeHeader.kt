@@ -206,6 +206,7 @@ internal fun formatHomeTopRightUnreadBadge(
 internal data class HomeTopRightUnreadBadgeLayout(
     val offsetX: Dp,
     val offsetY: Dp,
+    val reservedEndWidth: Dp,
     val minWidth: Dp,
     val minHeight: Dp,
     val horizontalPadding: Dp,
@@ -214,14 +215,21 @@ internal data class HomeTopRightUnreadBadgeLayout(
 
 internal fun resolveHomeTopRightUnreadBadgeLayout(): HomeTopRightUnreadBadgeLayout {
     return HomeTopRightUnreadBadgeLayout(
-        offsetX = 7.dp,
-        offsetY = (-5).dp,
+        offsetX = 0.dp,
+        offsetY = 0.dp,
+        reservedEndWidth = 9.dp,
         minWidth = 18.dp,
         minHeight = 18.dp,
         horizontalPadding = 5.dp,
         verticalPadding = 1.dp
     )
 }
+
+internal fun resolveHomeTopRightActionSlotWidth(
+    buttonSize: Dp,
+    badgeLayout: HomeTopRightUnreadBadgeLayout,
+    hasUnreadBadge: Boolean
+): Dp = if (hasUnreadBadge) buttonSize + badgeLayout.reservedEndWidth else buttonSize
 
 internal fun resolveHomeTopRightActionContentDescription(
     action: HomeTopRightAction,
@@ -2599,13 +2607,22 @@ fun iOSHomeHeader(
 
                             Spacer(modifier = Modifier.width(resolveHomeTopEdgeControlGap(uiPreset, androidNativeVariant)))
 
+                            val topRightActionButtonSize = resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant)
                             Box(
                                 modifier = Modifier
-                                    .size(resolveHomeTopSettingsButtonSize(uiPreset, androidNativeVariant))
+                                    .fillMaxHeight()
+                                    .width(
+                                        resolveHomeTopRightActionSlotWidth(
+                                            buttonSize = topRightActionButtonSize,
+                                            badgeLayout = topRightUnreadBadgeLayout,
+                                            hasUnreadBadge = topRightUnreadBadge != null
+                                        )
+                                    )
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .matchParentSize()
+                                        .align(Alignment.CenterStart)
+                                        .size(topRightActionButtonSize)
                                         .clip(edgeButtonShape)
                                         .then(
                                             if (useUnifiedTopPanel) {
