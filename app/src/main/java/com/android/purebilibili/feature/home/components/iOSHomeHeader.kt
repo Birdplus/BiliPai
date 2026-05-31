@@ -1609,6 +1609,8 @@ fun iOSHomeHeader(
     val isGlassSupported = shouldAllowHomeChromeLiquidGlass(Build.VERSION.SDK_INT)
     val allowHazeLiquidGlassFallback = shouldAllowDirectHazeLiquidGlassFallback(Build.VERSION.SDK_INT)
     val liquidStyle = homeSettings?.liquidGlassStyle ?: LiquidGlassStyle.CLASSIC
+    val bottomBarLiquidGlassPreset = homeSettings?.bottomBarLiquidGlassPreset
+        ?: HomeSettings().bottomBarLiquidGlassPreset
     val liquidGlassTuning = remember(
         homeSettings?.liquidGlassProgress,
         liquidStyle
@@ -2071,6 +2073,7 @@ fun iOSHomeHeader(
             backdrop = backdrop,
             liquidStyle = liquidStyle,
             liquidGlassTuning = liquidGlassTuning,
+            liquidGlassPreset = bottomBarLiquidGlassPreset,
             motionTier = motionTier,
             isScrolling = tabChromeMotionPolicy.isScrolling,
             isTransitionRunning = tabChromeMotionPolicy.isTransitionRunning,
@@ -2467,6 +2470,7 @@ fun iOSHomeHeader(
                                                     backdrop = backdrop,
                                                     liquidGlassStyle = liquidStyle,
                                                     liquidGlassTuning = liquidGlassTuning,
+                                                    liquidGlassPreset = bottomBarLiquidGlassPreset,
                                                     motionTier = motionTier,
                                                     isTransitionRunning = topChromeMotionPolicy.isTransitionRunning,
                                                     forceLowBlurBudget = forceLowBlurBudget,
@@ -2621,6 +2625,7 @@ fun iOSHomeHeader(
                                                             backdrop = backdrop,
                                                             liquidGlassStyle = liquidStyle,
                                                             liquidGlassTuning = liquidGlassTuning,
+                                                            liquidGlassPreset = bottomBarLiquidGlassPreset,
                                                             motionTier = motionTier,
                                                             isTransitionRunning = topChromeMotionPolicy.isTransitionRunning,
                                                             forceLowBlurBudget = forceLowBlurBudget,

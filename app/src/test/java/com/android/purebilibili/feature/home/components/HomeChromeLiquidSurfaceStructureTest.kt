@@ -75,10 +75,13 @@ class HomeChromeLiquidSurfaceStructureTest {
                 topHeaderSource.contains("drawChromeSurface = drawTopTabDockChrome") &&
                 topHeaderSource.contains("useBottomBarMatchedSurface = useTopTabBottomBarMatchedDock") &&
                 topHeaderSource.contains("tabChromeRenderMode = if (useTopTabBottomBarMatchedDock)") &&
+                topHeaderSource.contains("val bottomBarLiquidGlassPreset = homeSettings?.bottomBarLiquidGlassPreset") &&
+                topHeaderSource.contains("liquidGlassPreset = bottomBarLiquidGlassPreset") &&
                 topHeaderSource.contains("topTabDockChromeRenderMode") &&
                 topHeaderSource.contains("tabShape = if (useUnifiedTopPanel)") &&
                 topHeaderSource.contains("resolveSharedBottomBarCapsuleShape()") &&
                 topTabChrome.readText().contains("useBottomBarMatchedSurface: Boolean = false") &&
+                topTabChrome.readText().contains("liquidGlassPreset: BottomBarLiquidGlassPreset") &&
                 topTabChrome.readText().contains(".homeTopBottomBarMatchedSurface(")
         )
         assertTrue(
@@ -135,7 +138,17 @@ class HomeChromeLiquidSurfaceStructureTest {
         )
         assertTrue(
             "matched top dock helper should still use the KSU floating dock renderer for header controls",
-            topBarSource.contains(".kernelSuFloatingDockSurface(")
+            topBarSource.contains(".kernelSuFloatingDockSurface(") &&
+                topBarSource.contains("liquidGlassPreset: BottomBarLiquidGlassPreset") &&
+                topBarSource.contains("liquidGlassPreset = liquidGlassPreset")
+        )
+        assertTrue(
+            "top tab indicator should leave liquid-glass rendering to the outer dock when chrome exists",
+            topBarSource.contains("val shouldRenderTopTabLiquidGlassIndicator = shouldUseLiquidGlassIndicator &&") &&
+                topBarSource.contains("!hasOuterChromeSurface") &&
+                topBarSource.contains("if (shouldRenderTopTabLiquidGlassIndicator)") &&
+                topBarSource.contains("val shouldUseMd3DockBackedCapsule =") &&
+                topBarSource.contains("else if (!shouldUseMd3DockBackedCapsule)")
         )
         assertFalse(
             "top tab row should not keep backdrop capture, refraction, or liquid indicator layers",

@@ -80,6 +80,7 @@ import com.android.purebilibili.core.util.HapticType
 import com.android.purebilibili.feature.home.UserState
 import com.android.purebilibili.feature.home.HomeCategory
 import com.android.purebilibili.feature.home.resolveHomeTopCategories
+import com.android.purebilibili.core.store.BottomBarLiquidGlassPreset
 import com.android.purebilibili.core.store.LiquidGlassStyle
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -623,6 +624,7 @@ internal fun Modifier.homeTopBottomBarMatchedSurface(
     backdrop: LayerBackdrop?,
     liquidGlassStyle: LiquidGlassStyle,
     liquidGlassTuning: LiquidGlassTuning?,
+    liquidGlassPreset: BottomBarLiquidGlassPreset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
     motionTier: MotionTier,
     isTransitionRunning: Boolean,
     forceLowBlurBudget: Boolean,
@@ -652,7 +654,8 @@ internal fun Modifier.homeTopBottomBarMatchedSurface(
         hazeState = hazeState,
         motionTier = motionTier,
         isTransitionRunning = isTransitionRunning,
-        forceLowBlurBudget = forceLowBlurBudget
+        forceLowBlurBudget = forceLowBlurBudget,
+        liquidGlassPreset = liquidGlassPreset
     )
 }
 
@@ -968,8 +971,13 @@ private fun LightweightHomeTopTabs(
         val shouldUseLiquidGlassIndicator = (isLiquidGlassEnabled || shouldForceDragLiquidGlassIndicator) &&
             !skinPlainStyle &&
             !hasSkinStickerIcons
+        val shouldRenderTopTabLiquidGlassIndicator = shouldUseLiquidGlassIndicator &&
+            !hasOuterChromeSurface
         val shouldUseMd3LiquidCapsule = effectiveRenderer == HomeTopTabRenderer.MD3 &&
-            shouldUseLiquidGlassIndicator
+            shouldRenderTopTabLiquidGlassIndicator
+        val shouldUseMd3DockBackedCapsule = effectiveRenderer == HomeTopTabRenderer.MD3 &&
+            shouldUseLiquidGlassIndicator &&
+            hasOuterChromeSurface
         val measuredSelectedItemLeftPx by remember(shouldUseMovingIosCapsule) {
             derivedStateOf {
                 if (!shouldUseMovingIosCapsule ||
@@ -1043,7 +1051,7 @@ private fun LightweightHomeTopTabs(
                     }
             ) {
                 if (shouldUseMovingIosCapsule) {
-                    if (shouldUseLiquidGlassIndicator) {
+                    if (shouldRenderTopTabLiquidGlassIndicator) {
                         val capsuleShape = resolveSharedBottomBarCapsuleShape()
                         val indicatorWidth = resolveTopTabDockIndicatorWidthDp(
                             itemWidthDp = itemWidth.value,
@@ -1113,6 +1121,29 @@ private fun LightweightHomeTopTabs(
                                 )
                         )
                     }
+                }
+                if (shouldUseMd3DockBackedCapsule) {
+                    val capsuleShape = resolveSharedBottomBarCapsuleShape()
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .graphicsLayer {
+                                translationX = md3LiquidCapsuleTranslationXPx + topTabPanelOffsetPx
+                                scaleX = topTabIndicatorLayerTransform.scaleX
+                                scaleY = topTabIndicatorLayerTransform.scaleY
+                            }
+                            .width(md3LiquidCapsuleWidth)
+                            .height(dockIndicatorHeight)
+                            .clip(capsuleShape)
+                            .background(
+                                if (isDarkTheme) {
+                                    Color.White.copy(alpha = 0.1f)
+                                } else {
+                                    Color.Black.copy(alpha = 0.1f)
+                                },
+                                capsuleShape
+                            )
+                    )
                 }
                 if (shouldUseMd3LiquidCapsule) {
                     val capsuleShape = resolveSharedBottomBarCapsuleShape()
@@ -1225,7 +1256,7 @@ private fun LightweightHomeTopTabs(
                     } else {
                         resolveMd3TopTabIndicatorBottomPadding()
                     }
-                    if (shouldUseLiquidGlassIndicator && !shouldUseMd3LiquidCapsule) {
+                    if (shouldRenderTopTabLiquidGlassIndicator && !shouldUseMd3LiquidCapsule) {
                         BottomBarLiquidIndicatorSurface(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
@@ -1256,7 +1287,7 @@ private fun LightweightHomeTopTabs(
                                 scaleY = indicatorLayerTransform.scaleY
                             }
                         )
-                    } else {
+                    } else if (!shouldUseMd3DockBackedCapsule) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
