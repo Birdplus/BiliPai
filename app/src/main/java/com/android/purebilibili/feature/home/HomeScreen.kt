@@ -446,24 +446,6 @@ fun HomeScreen(
         }
     }
 
-    // [修复] 刷新时仅在列表不在顶部时回顶，避免与下拉手势状态冲突导致“卡一下”
-    LaunchedEffect(isRefreshing, state.currentCategory, state.popularSubCategory) {
-        if (!isRefreshing) return@LaunchedEffect
-        val gridState = if (state.currentCategory == HomeCategory.POPULAR) {
-            popularGridStates[state.popularSubCategory]
-        } else {
-            gridStates[state.currentCategory]
-        } ?: return@LaunchedEffect
-        if (!shouldResetToTopOnRefreshStart(
-                firstVisibleItemIndex = gridState.firstVisibleItemIndex,
-                firstVisibleItemScrollOffset = gridState.firstVisibleItemScrollOffset
-            )
-        ) {
-            return@LaunchedEffect
-        }
-        gridState.animateScrollToItem(0)
-    }
-
     //  [新增] JSON 插件过滤提示
     val snackbarHostState = remember { SnackbarHostState() }
     val lastFilteredCount by com.android.purebilibili.core.plugin.json.JsonPluginManager.lastFilteredCount.collectAsState(context = kotlin.coroutines.EmptyCoroutineContext)

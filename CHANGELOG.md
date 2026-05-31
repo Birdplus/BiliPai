@@ -4,16 +4,18 @@
 
 ### 版本信息
 - 版本号从 `8.8.0` 升级到 `9.0.0`，`versionCode` 升级到 `213`。
-- 本次为 8.8.0 后的主线更新，重点补齐直播互动与横屏发送、评论输入与楼层体验、首页顶部标签/分区指示器/液态玻璃动效、CDN 稳播优选、空降助手统计、离线下载与番剧影视能力，并修复 MD3 下拉刷新与胶囊标签点击态问题。
+- 本次为 8.8.0 后的主线更新，重点补齐直播互动与横屏发送、评论输入与楼层体验、空间动态转发、首页顶部标签/分区指示器/液态玻璃动效、CDN 稳播优选、空降助手统计、离线下载与番剧影视能力，并修复 MD3 下拉刷新与胶囊标签点击态问题。
 - 六一儿童节快乐；也提前祝高考学子高考顺利，落笔生花，奔赴热爱。
 
 ### 更新内容
 - **直播互动与横屏发送**：补齐直播互动链路与横屏发送能力，直播观看中的输入、发送和横屏操作更完整。
-- **评论输入体验增强**：评论输入支持 `@` 好友，动态评论楼层可自动展开，小站评论跳转修复，评论链路从输入到定位更顺。
+- **评论输入体验增强**：视频评论输入支持 `@` 好友昵称搜索；动态评论楼层可自动展开，小站评论跳转修复，评论链路从输入到定位更顺。
+- **空间动态转发修复**：转发动态改为按 Web 端 `dyn_req` JSON 协议提交，空间页、动态页和动态详情页共享的转发弹窗在失败后会恢复按钮与取消能力，避免请求失败时长时间卡住无法操作。
 - **追更合集与详情修复**：修复追更合集入口与详情页相关问题，降低从合集入口进入内容时的断链风险。
 - **首页顶部布局设置**：新增首页顶部布局设置，扩展顶部折叠设置，首页顶部可按不同显示偏好调整；顶部标签固定为六项展示并补齐分页、默认展示和超六项回退策略。
 - **顶部标签视觉与交互打磨**：修正顶部标签垂直居中、MD3 顶部标签样式、安卓原生顶部标签指示器、热门子页签切换动效，以及顶部标签长按拖动与点击切换体验。
 - **顶部标签液态玻璃与折射**：顶部 dock 跟随 iOS26 底栏玻璃，补齐顶部标签液态玻璃 dock、内容折射采样预热、顶部/底栏指示器交互复用、折射避让和发行版分层，减少玻璃指示器错位、外溢和矩形捕获问题。
+- **液态玻璃滑动形变优化**：对齐 KernelSU 的胶囊速度形变算法，形变速度改为弹簧过滤，保留 BiliPai 现有指示器放大倍数，减少左右滑动时的抖动和顿挫。
 - **分区页重构与指示器复用**：重构分区页样式，增强分区侧栏长按拖动和滑动手势处理，修复分区返回、侧栏指示器漂移、视频返回状态，并复用首页顶部与底栏指示器渲染。
 - **首页返回与底栏收尾修复**：修复首页视频返回时顶栏复位、底栏重复隐藏、底栏收尾和延迟恢复问题，让返回路径的顶部/底部镀铬状态更稳定。
 - **离线下载与本地播放增强**：增强离线下载与断点续传稳定性，修复离线播放器弹幕与进度条体验，离线播放链路更可靠。
@@ -21,9 +23,10 @@
 - **CDN 稳播优选与手动检测**：优化 CDN 区域优选、播放 fallback 和手动检测链路，提升弱网或区域节点不稳时的播放恢复能力。
 - **空降助手统计与卡片修复**：补齐空降助手洞察统计和卡片展示策略，修复相关卡片状态与 CDN 手动检测联动问题。
 - **骨架屏同步呼吸光**：首页与视频详情骨架屏改为统一节奏的同步呼吸光动画，首屏加载和详情加载占位更一致。
-- **首页下拉刷新修复**：MD3 下拉刷新按完整指示器和提示文字高度预留空间，内容下移更跟手，刷新指示器层级高于视频卡片，避免被视频遮挡。
+- **首页下拉刷新修复**：MD3 下拉刷新按完整指示器和提示文字高度预留空间，内容下移更跟手，刷新指示器层级高于视频卡片，避免被视频遮挡；松手刷新后旧卡片先停留在原位置，等新内容插入后再回顶，减少刷新过程跳动。
 - **顶部胶囊点击态修复**：胶囊指示器场景关闭默认矩形水波纹，普通 MD3 下划线标签保留点击反馈，修复点按切换时胶囊周围出现矩形形状的问题。
 - **低版本底栏闪退修复**：移除底栏交互高光对 `RuntimeShader` 的直接引用，避免 Android 10 等低版本系统在解析高光 Modifier 时因缺少类而闪退。
+- **开源致谢补全**：设置页开源致谢按当前工程依赖、投屏/测试模块与明确参考实现补齐库名、许可和 GitHub 链接，并注明该列表可能不包含全部传递依赖或完整法律清单；列表样式跟随当前主题色。
 - **版本与文档同步**：版本号升级到 `9.0.0` / `versionCode 213`，README、README_EN 和更新日志同步到 9.0.0。
 
 ### 已知问题
@@ -34,6 +37,10 @@
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.HomePullRefreshUiPolicyTest'`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.components.TopTabMotionVelocityTest'`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.components.BottomBarIndicatorPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.core.ui.animation.DampedDragAnimationPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.video.ui.components.CommentInputDialogLayoutPolicyTest' --tests 'com.android.purebilibili.feature.settings.OpenSourceLicensesPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.core.network.DynamicApiContractTest'`
+- `./gradlew :app:compileDebugKotlin`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.HomeFeedSkeletonCardStructureTest' --tests 'com.android.purebilibili.feature.video.ui.components.VideoDetailSkeletonStructureTest'`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.plugin.CdnRegionPolicyTest' --tests 'com.android.purebilibili.feature.plugin.SponsorBlockPluginPolicyTest' --tests 'com.android.purebilibili.feature.video.viewmodel.PlaybackCdnFallbackPolicyTest' --tests 'com.android.purebilibili.core.network.NetworkClientPolicyTest'`
 - `git diff --check`

@@ -1213,6 +1213,10 @@ internal data class BottomBarIndicatorVisualPolicy(
 
 internal const val BOTTOM_BAR_REFRACTION_IDLE_HOLD_MS = 96L
 private const val BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET = 88f / 56f
+private const val KSU_INDICATOR_VELOCITY_NORMALIZATION_DIVISOR = 10f
+private const val KSU_INDICATOR_VELOCITY_SCALE_X_MULTIPLIER = 0.75f
+private const val KSU_INDICATOR_VELOCITY_SCALE_Y_MULTIPLIER = 0.25f
+private const val KSU_INDICATOR_VELOCITY_CLAMP = 0.2f
 
 internal fun resolveBottomBarIndicatorVisualPolicyWithHold(
     basePolicy: BottomBarIndicatorVisualPolicy,
@@ -1450,6 +1454,7 @@ internal fun resolveBottomBarEffectiveBackdropPresetProgress(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 internal fun resolveBottomBarIndicatorLayerTransform(
     motionProgress: Float,
     velocityItemsPerSecond: Float,
@@ -1464,19 +1469,17 @@ internal fun resolveBottomBarIndicatorLayerTransform(
         stop = BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET,
         fraction = clampedDragScaleProgress
     )
-    // [KSU 对齐] 速度挤压形变改用 motionSpec.indicator 的 capsuleVelocity* 参数,
-    // 此前这些值被硬编码(/10、0.75、0.25、0.2),与各 profile 的调参脱节。
-    val indicatorSpec = motionSpec.indicator
+    // 对齐 KernelSU FloatingBottomBar 的胶囊速度形变：只复用速度挤压算法,
+    // 指示器基础放大倍数仍保持 BiliPai 的 88/56,避免视觉尺寸回退。
     val velocity = if (isDragging || clampedDragScaleProgress > 0f) {
-        velocityItemsPerSecond / indicatorSpec.capsuleVelocityNormalizationDivisor
+        velocityItemsPerSecond / KSU_INDICATOR_VELOCITY_NORMALIZATION_DIVISOR
     } else {
         0f
     }
-    val velocityClamp = indicatorSpec.capsuleVelocityClamp
-    val velocityScaleX = (velocity * indicatorSpec.capsuleVelocityScaleXMultiplier)
-        .coerceIn(-velocityClamp, velocityClamp)
-    val velocityScaleY = (velocity * indicatorSpec.capsuleVelocityScaleYMultiplier)
-        .coerceIn(-velocityClamp, velocityClamp)
+    val velocityScaleX = (velocity * KSU_INDICATOR_VELOCITY_SCALE_X_MULTIPLIER)
+        .coerceIn(-KSU_INDICATOR_VELOCITY_CLAMP, KSU_INDICATOR_VELOCITY_CLAMP)
+    val velocityScaleY = (velocity * KSU_INDICATOR_VELOCITY_SCALE_Y_MULTIPLIER)
+        .coerceIn(-KSU_INDICATOR_VELOCITY_CLAMP, KSU_INDICATOR_VELOCITY_CLAMP)
     return BottomBarIndicatorLayerTransform(
         scaleX = baseScale / (1f - velocityScaleX),
         scaleY = baseScale * (1f - velocityScaleY)

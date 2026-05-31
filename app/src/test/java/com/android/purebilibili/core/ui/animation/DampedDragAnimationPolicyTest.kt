@@ -83,15 +83,19 @@ class DampedDragAnimationPolicyTest {
     }
 
     @Test
-    fun `drag gesture forwards live velocity for indicator deformation`() {
+    fun `drag velocity is spring filtered for indicator deformation`() {
         val source = listOf(
             File("app/src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt"),
             File("src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt")
         ).first { it.exists() }.readText()
 
-        assertTrue(source.contains("val deformationVelocityItemsPerSecond: Float"))
+        assertTrue(source.contains("private val deformationVelocitySpring = spring<Float>("))
+        assertTrue(source.contains("val deformationVelocityItemsPerSecond: Float get() = deformationVelocityAnimation.value"))
+        assertTrue(source.contains("deformationVelocityAnimation.animateTo("))
+        assertTrue(source.contains("targetValue = dragVelocityItemsPerSecond"))
         assertTrue(source.contains("val velocity = velocityTracker.calculateVelocity()"))
         assertTrue(source.contains("dragState.onDrag(dragAmount, itemWidthPx, velocity.x)"))
+        assertFalse(source.contains("get() = if (isDragging) dragVelocityItemsPerSecond else velocity"))
     }
 
     @Test

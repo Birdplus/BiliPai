@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.*
@@ -148,6 +149,7 @@ fun CommentInputDialog(
     var isForwardToDynamic by remember { mutableStateOf(false) } // 转发到动态
     var showEmojiPanel by remember { mutableStateOf(false) }    // 表情面板
     var showMentionPanel by remember { mutableStateOf(false) }
+    var mentionSearchText by remember { mutableStateOf("") }
     var currentTab by remember { mutableStateOf(0) } // 0=Kaomoji, 1=Emoji, 2+=API Packages
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val text = textFieldValue.text
@@ -182,6 +184,7 @@ fun CommentInputDialog(
         if (mentionQuery != null) {
             showMentionPanel = true
             showEmojiPanel = false
+            mentionSearchText = mentionQuery.query
             onMentionSearchQueryChange(mentionQuery.query)
         } else {
             showMentionPanel = false
@@ -210,6 +213,7 @@ fun CommentInputDialog(
             isForwardToDynamic = false
             showEmojiPanel = false
             showMentionPanel = false
+            mentionSearchText = ""
             selectedImageUris = emptyList()
         }
     }
@@ -340,6 +344,11 @@ fun CommentInputDialog(
                             exit = verticalContentRevealExitTransition(resolveCommentVerticalContentRevealMotionSpec())
                         ) {
                             CommentMentionSearchPanel(
+                                query = mentionSearchText,
+                                onQueryChange = { query ->
+                                    mentionSearchText = query
+                                    onMentionSearchQueryChange(query)
+                                },
                                 users = mentionUsers,
                                 isLoading = isMentionSearching,
                                 errorMessage = mentionSearchError,
@@ -352,6 +361,7 @@ fun CommentInputDialog(
                                     )
                                     textFieldValue = TextFieldValue(nextText, nextSelection)
                                     showMentionPanel = false
+                                    mentionSearchText = ""
                                 },
                                 modifier = Modifier.padding(top = 8.dp)
                             )
@@ -473,6 +483,7 @@ fun CommentInputDialog(
                                         insertTextAtCursor("@")
                                         showEmojiPanel = false
                                         showMentionPanel = true
+                                        mentionSearchText = ""
                                         onMentionSearchQueryChange("")
                                     },
                                     enabled = canInputComment && !isSending,
@@ -747,6 +758,8 @@ fun CommentInputDialog(
 
 @Composable
 private fun CommentMentionSearchPanel(
+    query: String,
+    onQueryChange: (String) -> Unit,
     users: List<MentionSearchUser>,
     isLoading: Boolean,
     errorMessage: String?,
@@ -760,81 +773,112 @@ private fun CommentMentionSearchPanel(
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
     ) {
-        when {
-            isLoading -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                singleLine = true,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                },
+                placeholder = { Text("搜索好友昵称") },
+                textStyle = MaterialTheme.typography.bodySmall,
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.56f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                )
+            )
+
+            when {
+                isLoading -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "正在搜索好友",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                errorMessage != null -> {
                     Text(
-                        text = "正在搜索好友",
+                        text = errorMessage,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                     )
                 }
-            }
 
-            errorMessage != null -> {
-                Text(
-                    text = errorMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(14.dp)
-                )
-            }
+                users.isEmpty() -> {
+                    Text(
+                        text = if (query.isBlank()) "输入好友昵称搜索" else "没有找到匹配的用户",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    )
+                }
 
-            users.isEmpty() -> {
-                Text(
-                    text = "没有找到匹配的用户",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(14.dp)
-                )
-            }
-
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(users, key = { it.uid }) { user ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onUserClick(user) }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AsyncImage(
-                                model = user.face,
-                                contentDescription = user.name,
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false)
+                    ) {
+                        items(users, key = { it.uid }) { user ->
+                            Row(
                                 modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(RoundedCornerShape(17.dp))
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(
-                                modifier = Modifier.weight(1f)
+                                    .fillMaxWidth()
+                                    .clickable { onUserClick(user) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = user.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                AsyncImage(
+                                    model = user.face,
+                                    contentDescription = user.name,
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(RoundedCornerShape(17.dp))
                                 )
-                                Text(
-                                    text = "${FormatUtils.formatStat(user.fans.toLong())} 粉丝",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
-                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = user.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "${FormatUtils.formatStat(user.fans.toLong())} 粉丝",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1
+                                    )
+                                }
                             }
                         }
                     }

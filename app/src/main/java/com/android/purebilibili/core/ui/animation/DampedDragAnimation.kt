@@ -87,6 +87,11 @@ internal class DampedDragAnimationState(
         stiffness = 1000f,
         visibilityThreshold = 0.001f
     )
+    private val deformationVelocitySpring = spring<Float>(
+        dampingRatio = 0.5f,
+        stiffness = 300f,
+        visibilityThreshold = 0.001f
+    )
     
     /** 当前动画位置 */
     val value: Float get() = animatable.value
@@ -95,8 +100,7 @@ internal class DampedDragAnimationState(
     val velocity: Float get() = animatable.velocity
 
     /** 指示器形变速度：拖拽时来自实时手势速度，释放后回到动画速度。 */
-    val deformationVelocityItemsPerSecond: Float
-        get() = if (isDragging) dragVelocityItemsPerSecond else velocity
+    val deformationVelocityItemsPerSecond: Float get() = deformationVelocityAnimation.value
 
     /** 最近一次释放手势的像素速度（px/s，用于折射/透镜强度） */
     var velocityPxPerSecond by mutableFloatStateOf(0f)
@@ -133,6 +137,8 @@ internal class DampedDragAnimationState(
     private var pressJob: Job? = null
     private var selectionJob: Job? = null
     private var offsetJob: Job? = null
+    private val deformationVelocityAnimation = Animatable(0f, 0.001f)
+    private var deformationVelocityJob: Job? = null
 
     private fun startNewMotion(): Int {
         motionGeneration += 1
@@ -160,6 +166,7 @@ internal class DampedDragAnimationState(
             desiredDragOffsetPx = offsetAnimation.value
             velocityPxPerSecond = 0f
             dragVelocityItemsPerSecond = 0f
+            deformationVelocityJob?.cancel()
             // 按压缩放 — 参考 LiquidBottomTabs press()
             pressJob?.cancel()
             pressJob = scope.launch {
@@ -170,6 +177,13 @@ internal class DampedDragAnimationState(
             velocityPxPerSecond = gestureVelocityPxPerSecond,
             itemWidthPx = itemWidthPx
         )
+        deformationVelocityJob?.cancel()
+        deformationVelocityJob = scope.launch {
+            deformationVelocityAnimation.animateTo(
+                targetValue = dragVelocityItemsPerSecond,
+                animationSpec = deformationVelocitySpring
+            )
+        }
         
         // [优化] 橡皮筋阻尼物理：
         val currentValue = desiredValue
@@ -226,6 +240,10 @@ internal class DampedDragAnimationState(
         desiredValue = targetValue
         dragVelocityItemsPerSecond = 0f
         targetIndex = targetValue.roundToInt().coerceIn(0, itemCount - 1)
+        deformationVelocityJob?.cancel()
+        deformationVelocityJob = scope.launch {
+            deformationVelocityAnimation.snapTo(0f)
+        }
         positionJob = scope.launch {
             if (generation != motionGeneration) return@launch
             animatable.stop()
@@ -282,6 +300,10 @@ internal class DampedDragAnimationState(
             if (generation == motionGeneration) {
                 velocityPxPerSecond = 0f
                 dragVelocityItemsPerSecond = 0f
+                deformationVelocityJob?.cancel()
+                deformationVelocityJob = launch {
+                    deformationVelocityAnimation.animateTo(0f, deformationVelocitySpring)
+                }
                 settledReleaseCount += 1
                 if (notifyIndexChanged && !notifyIndexChangedOnReleaseStart) {
                     onIndexChanged(releaseTargetIndex)
@@ -332,6 +354,10 @@ internal class DampedDragAnimationState(
         targetIndex = index
         desiredValue = index.toFloat()
         dragVelocityItemsPerSecond = 0f
+        deformationVelocityJob?.cancel()
+        deformationVelocityJob = scope.launch {
+            deformationVelocityAnimation.snapTo(0f)
+        }
         selectionJob = scope.launch {
             if (generation != motionGeneration) return@launch
             pressJob?.cancel()

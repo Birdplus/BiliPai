@@ -732,6 +732,21 @@ class BottomBarIndicatorPolicyTest {
     }
 
     @Test
+    fun `indicator velocity deformation follows KernelSU constants without changing drag scale target`() {
+        val baseScale = 88f / 56f
+        val transform = resolveBottomBarIndicatorLayerTransform(
+            motionProgress = 1f,
+            velocityItemsPerSecond = 2f,
+            isDragging = true,
+            dragScaleProgress = 1f,
+            motionSpec = resolveBottomBarMotionSpec(BottomBarMotionProfile.ANDROID_NATIVE_FLOATING)
+        )
+
+        assertEquals(baseScale / (1f - ((2f / 10f) * 0.75f)), transform.scaleX, 0.001f)
+        assertEquals(baseScale * (1f - ((2f / 10f) * 0.25f)), transform.scaleY, 0.001f)
+    }
+
+    @Test
     fun `settle rebound transform is subtle and returns to neutral`() {
         val compressed = resolveBottomBarSettleReboundTransform(progress = 0.1f)
         val rebound = resolveBottomBarSettleReboundTransform(progress = 0.46f)
