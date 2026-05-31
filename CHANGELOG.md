@@ -18,6 +18,7 @@
 - **首页返回与底栏收尾修复**：修复首页视频返回时顶栏复位、底栏重复隐藏、底栏收尾和延迟恢复问题，让返回路径的顶部/底部镀铬状态更稳定。
 - **离线下载与本地播放增强**：增强离线下载与断点续传稳定性，修复离线播放器弹幕与进度条体验，离线播放链路更可靠。
 - **番剧影视 API 完善**：完善番剧影视 API 功能，扩展内容获取与页面承载能力。
+- **骨架屏同步呼吸光**：首页与视频详情骨架屏改为统一节奏的同步呼吸光动画，首屏加载和详情加载占位更一致。
 - **首页下拉刷新修复**：MD3 下拉刷新按完整指示器和提示文字高度预留空间，内容下移更跟手，刷新指示器层级高于视频卡片，避免被视频遮挡。
 - **顶部胶囊点击态修复**：胶囊指示器场景关闭默认矩形水波纹，普通 MD3 下划线标签保留点击反馈，修复点按切换时胶囊周围出现矩形形状的问题。
 - **低版本底栏闪退修复**：移除底栏交互高光对 `RuntimeShader` 的直接引用，避免 Android 10 等低版本系统在解析高光 Modifier 时因缺少类而闪退。
@@ -31,6 +32,7 @@
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.HomePullRefreshUiPolicyTest'`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.components.TopTabMotionVelocityTest'`
 - `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.components.BottomBarIndicatorPolicyTest'`
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.HomeFeedSkeletonCardStructureTest' --tests 'com.android.purebilibili.feature.video.ui.components.VideoDetailSkeletonStructureTest'`
 - `git diff --check`
 
 ## v8.8.0 (2026-05-31)
