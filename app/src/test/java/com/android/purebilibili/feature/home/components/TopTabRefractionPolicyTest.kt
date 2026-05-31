@@ -22,6 +22,9 @@ class TopTabRefractionPolicyTest {
         assertTrue(source.contains("resolveBottomBarRefractionMotionProfile("))
         assertTrue(source.contains("resolveBottomBarBackdropPresetIndicatorLens("))
         assertTrue(source.contains("topTabShouldStretchIndicator"))
+        assertTrue(source.contains("val topTabContentBackdrop = rememberLayerBackdrop()"))
+        assertTrue(source.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)"))
+        assertTrue(source.contains("contentBackdrop = topTabIndicatorContentBackdrop"))
         assertTrue(source.contains("indicatorHeight = 4.dp"))
     }
 
@@ -318,6 +321,7 @@ class TopTabRefractionPolicyTest {
         assertFalse(source.contains("drawBackdrop("))
         assertFalse(source.contains(".layerBackdrop(tabsBackdrop)"))
         assertFalse(source.contains("rememberCombinedBackdrop(backdrop, tabsBackdrop)"))
+        assertTrue(source.contains("layerBackdrop(topTabContentBackdrop)"))
     }
 
     @Test

@@ -90,6 +90,9 @@ import com.android.purebilibili.core.ui.animation.rememberDampedDragAnimationSta
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.blur.currentUnifiedBlurIntensity
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -984,6 +987,12 @@ private fun LightweightHomeTopTabs(
         val shouldUseMd3DockBackedCapsule = effectiveRenderer == HomeTopTabRenderer.MD3 &&
             shouldUseLiquidGlassIndicator &&
             hasOuterChromeSurface
+        val topTabContentBackdrop = rememberLayerBackdrop()
+        val topTabIndicatorContentBackdrop = if (shouldUseLiquidGlassIndicator && backdrop != null) {
+            rememberCombinedBackdrop(backdrop, topTabContentBackdrop)
+        } else {
+            topTabContentBackdrop
+        }
         val measuredSelectedItemLeftPx by remember(shouldUseMovingIosCapsule) {
             derivedStateOf {
                 if (!shouldUseMovingIosCapsule ||
@@ -1078,7 +1087,7 @@ private fun LightweightHomeTopTabs(
                             indicatorHeight = dockIndicatorHeight,
                             shellShape = capsuleShape,
                             liquidGlassPreset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-                            contentBackdrop = backdrop,
+                            contentBackdrop = topTabIndicatorContentBackdrop,
                             backdrop = backdrop,
                             indicatorLensSpec = topTabIndicatorLensSpec,
                             refractionMotionProfile = topTabRefractionMotionProfile,
@@ -1134,7 +1143,7 @@ private fun LightweightHomeTopTabs(
                         indicatorWidth = md3LiquidCapsuleWidth,
                         shellShape = resolveSharedBottomBarCapsuleShape(),
                         liquidGlassPreset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-                        contentBackdrop = backdrop,
+                        contentBackdrop = topTabIndicatorContentBackdrop,
                         backdrop = backdrop,
                         indicatorLensSpec = topTabIndicatorLensSpec,
                         refractionMotionProfile = topTabRefractionMotionProfile,
@@ -1165,7 +1174,7 @@ private fun LightweightHomeTopTabs(
                         indicatorHeight = dockIndicatorHeight,
                         shellShape = capsuleShape,
                         liquidGlassPreset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-                        contentBackdrop = backdrop,
+                        contentBackdrop = topTabIndicatorContentBackdrop,
                         backdrop = backdrop,
                         indicatorLensSpec = topTabIndicatorLensSpec,
                         refractionMotionProfile = topTabRefractionMotionProfile,
@@ -1188,7 +1197,15 @@ private fun LightweightHomeTopTabs(
                 }
                 LazyRow(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .run {
+                            if (shouldUseLiquidGlassIndicator) {
+                                layerBackdrop(topTabContentBackdrop)
+                            } else {
+                                this
+                            }
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start,
                     contentPadding = PaddingValues(horizontal = if (effectiveRenderer == HomeTopTabRenderer.IOS) 2.dp else 0.dp)
@@ -1275,7 +1292,7 @@ private fun LightweightHomeTopTabs(
                             indicatorHeight = 4.dp,
                             shellShape = AppShapes.container(ContainerLevel.Pill),
                             liquidGlassPreset = BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-                            contentBackdrop = backdrop,
+                            contentBackdrop = topTabIndicatorContentBackdrop,
                             backdrop = backdrop,
                             indicatorLensSpec = topTabIndicatorLensSpec,
                             refractionMotionProfile = topTabRefractionMotionProfile,

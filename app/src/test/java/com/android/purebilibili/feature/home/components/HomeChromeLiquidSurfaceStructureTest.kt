@@ -148,15 +148,19 @@ class HomeChromeLiquidSurfaceStructureTest {
         )
         assertTrue(
             "top tab indicator should reuse the bottom bar KSU indicator layer when chrome exists",
-            topBarSource.contains("val shouldRenderTopTabLiquidGlassIndicator = shouldUseLiquidGlassIndicator &&") &&
+            topBarSource.contains("val shouldRenderTopTabLiquidGlassIndicator = shouldUseLiquidGlassIndicator") &&
                 topBarSource.contains("!hasOuterChromeSurface") &&
                 topBarSource.contains("if (shouldRenderTopTabLiquidGlassIndicator)") &&
                 topBarSource.contains("val shouldUseMd3DockBackedCapsule =") &&
                 topBarSource.contains("KernelSuBottomBarIndicatorLayer(") &&
+                topBarSource.contains("val topTabContentBackdrop = rememberLayerBackdrop()") &&
+                topBarSource.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)") &&
+                topBarSource.contains("layerBackdrop(topTabContentBackdrop)") &&
+                topBarSource.contains("contentBackdrop = topTabIndicatorContentBackdrop") &&
                 topBarSource.contains("else if (!shouldUseMd3DockBackedCapsule)")
         )
         assertFalse(
-            "top tab row should not keep backdrop capture, refraction, or liquid indicator layers",
+            "top tab row should not keep the old bottom-bar local backdrop capture names",
             topBarSource.contains("backdrop = tabsBackdrop") ||
                 topBarSource.contains(".layerBackdrop(tabsBackdrop)") ||
                 topBarSource.contains("rememberCombinedBackdrop(backdrop, tabsBackdrop)") ||
