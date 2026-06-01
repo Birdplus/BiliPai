@@ -550,8 +550,9 @@ fun BottomBarLiquidSegmentedControl(
             isDragging = dragState.isDragging
         )
         val indicatorLayerScaleProgress = maxOf(indicatorDragScaleProgress, tapPressProgress)
-        val indicatorLayerScaleTransform = rememberKernelSuIndicatorDragScaleTransform(
-            active = dragState.isDragging || tapPressProgress > 0.001f
+        val indicatorLayerScaleTransform = BottomBarIndicatorLayerTransform(
+            scaleX = dragState.scaleX,
+            scaleY = dragState.scaleY
         )
         val panelOffsetPx by remember(density, itemWidthPx) {
             derivedStateOf {

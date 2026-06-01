@@ -81,6 +81,7 @@ import com.android.purebilibili.data.model.response.VideoItem
 import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.feature.common.resolveIndexedVideoLazyKey
 import com.android.purebilibili.feature.home.components.BottomBarClickPulseTransform
+import com.android.purebilibili.feature.home.components.BottomBarIndicatorLayerTransform
 import com.android.purebilibili.feature.home.components.KernelSuBottomBarIndicatorLayer
 import com.android.purebilibili.feature.home.components.resolveAndroidNativeIdleIndicatorSurfaceColor
 import com.android.purebilibili.feature.home.components.resolveBottomBarBackdropPresetIndicatorLens
@@ -90,7 +91,6 @@ import com.android.purebilibili.feature.home.components.resolveBottomBarLiquidGl
 import com.android.purebilibili.feature.home.components.resolveBottomBarRefractionMotionProfile
 import com.android.purebilibili.feature.home.components.resolveSharedBottomBarCapsuleShape
 import com.android.purebilibili.feature.home.components.rememberBottomBarIndicatorDragScaleProgress
-import com.android.purebilibili.feature.home.components.rememberKernelSuIndicatorDragScaleTransform
 import com.android.purebilibili.feature.home.components.normalizeTopTabLabelMode
 import com.android.purebilibili.feature.home.components.resolveSegmentedControlMotionProgress
 import com.android.purebilibili.feature.home.components.resolveSegmentedControlMotionSpec
@@ -553,8 +553,9 @@ private fun PartitionSideRailMovingIndicator(
     val indicatorDragScaleProgress = rememberBottomBarIndicatorDragScaleProgress(
         isDragging = dragState.isDragging
     )
-    val indicatorLayerScaleTransform = rememberKernelSuIndicatorDragScaleTransform(
-        active = dragState.isDragging || pressProgress > 0.001f
+    val indicatorLayerScaleTransform = BottomBarIndicatorLayerTransform(
+        scaleX = dragState.scaleX,
+        scaleY = dragState.scaleY
     )
     val backdropPresetProgress = resolveBottomBarBackdropPresetProgress(
         motionProgress = motionProgress,

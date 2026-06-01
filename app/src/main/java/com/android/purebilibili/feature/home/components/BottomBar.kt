@@ -1212,7 +1212,7 @@ internal data class BottomBarIndicatorVisualPolicy(
 )
 
 internal const val BOTTOM_BAR_REFRACTION_IDLE_HOLD_MS = 96L
-private const val BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET = 88f / 56f
+private const val BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET = 78f / 56f
 private const val KSU_INDICATOR_VELOCITY_NORMALIZATION_DIVISOR = 10f
 private const val KSU_INDICATOR_VELOCITY_SCALE_X_MULTIPLIER = 0.75f
 private const val KSU_INDICATOR_VELOCITY_SCALE_Y_MULTIPLIER = 0.25f
@@ -1472,8 +1472,7 @@ internal fun resolveBottomBarIndicatorLayerTransform(
     )
     val baseScaleX = dragScaleTransform?.scaleX ?: baseScale
     val baseScaleY = dragScaleTransform?.scaleY ?: baseScale
-    // 对齐 KernelSU FloatingBottomBar 的胶囊速度形变：只复用速度挤压算法,
-    // 指示器基础放大倍数仍保持 BiliPai 的 88/56,避免视觉尺寸回退。
+    // 对齐 KernelSU FloatingBottomBar 的胶囊速度形变和基础按压放大倍数。
     val velocity = if (isDragging || clampedDragScaleProgress > 0f) {
         velocityItemsPerSecond / KSU_INDICATOR_VELOCITY_NORMALIZATION_DIVISOR
     } else {
@@ -1504,30 +1503,6 @@ internal fun rememberBottomBarIndicatorDragScaleProgress(
         )
     }
     return progress.value
-}
-
-@Composable
-internal fun rememberKernelSuIndicatorDragScaleTransform(
-    active: Boolean
-): BottomBarIndicatorLayerTransform {
-    val scaleX = remember { Animatable(1f, 0.001f) }
-    val scaleY = remember { Animatable(1f, 0.001f) }
-    LaunchedEffect(active) {
-        val target = if (active) BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET else 1f
-        launch {
-            scaleX.animateTo(
-                targetValue = target,
-                animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f, visibilityThreshold = 0.001f)
-            )
-        }
-        launch {
-            scaleY.animateTo(
-                targetValue = target,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f, visibilityThreshold = 0.001f)
-            )
-        }
-    }
-    return BottomBarIndicatorLayerTransform(scaleX = scaleX.value, scaleY = scaleY.value)
 }
 
 internal fun resolveBottomBarVisualIndicatorPosition(
@@ -2839,8 +2814,9 @@ private fun KernelSuAlignedBottomBar(
         isDragging = dampedDragState.isDragging
     )
     val indicatorLayerScaleProgress = maxOf(indicatorDragScaleProgress, effectivePressProgress)
-    val indicatorLayerScaleTransform = rememberKernelSuIndicatorDragScaleTransform(
-        active = dampedDragState.isDragging || effectivePressProgress > 0.001f
+    val indicatorLayerScaleTransform = BottomBarIndicatorLayerTransform(
+        scaleX = dampedDragState.scaleX,
+        scaleY = dampedDragState.scaleY
     )
     val materialScrollProgress by animateFloatAsState(
         targetValue = if (isFeedScrollInProgress) 1f else 0f,
@@ -2986,11 +2962,12 @@ private fun KernelSuAlignedBottomBar(
                 itemCount = totalItems
             )
             val itemWidthPx = with(density) { indicatorWidth.toPx() }.coerceAtLeast(1f)
-            val panelOffsetPx by remember(density, itemWidthPx) {
+            val dockWidthPx = with(density) { dockWidth.toPx() }.coerceAtLeast(1f)
+            val panelOffsetPx by remember(density, dockWidthPx) {
                 derivedStateOf {
-                    val fraction = (dampedDragState.dragOffset / itemWidthPx).coerceIn(-1f, 1f)
+                    val fraction = (dampedDragState.dragOffset / dockWidthPx).coerceIn(-1f, 1f)
                     with(density) {
-                        bottomBarMotionSpec.refraction.panelOffsetMaxDp.dp.toPx() *
+                        4.dp.toPx() *
                             fraction.sign *
                             EaseOut.transform(abs(fraction))
                     }

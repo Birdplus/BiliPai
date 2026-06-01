@@ -71,7 +71,7 @@ class BottomBarMiuixStructureTest {
         assertTrue(kernelSuRendererSource.contains("notifyIndexChangedOnReleaseStart = false"))
         assertTrue(kernelSuRendererSource.contains("holdPressUntilReleaseTargetSettles = true"))
         assertTrue(kernelSuRendererSource.contains("dampedDragState.updateIndex(index)"))
-        assertTrue(source.contains("private const val BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET = 88f / 56f"))
+        assertTrue(source.contains("private const val BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET = 78f / 56f"))
         assertTrue(kernelSuRendererSource.contains("var bottomBarTapSwitchPulseKey by remember"))
         assertTrue(kernelSuRendererSource.contains("val tapSwitchPressProgress = rememberBottomBarTapSwitchPressProgress("))
         assertTrue(kernelSuRendererSource.contains("val effectivePressProgress = maxOf("))

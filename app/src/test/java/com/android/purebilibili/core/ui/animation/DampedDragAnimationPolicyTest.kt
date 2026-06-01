@@ -1,6 +1,5 @@
 package com.android.purebilibili.core.ui.animation
 
-import com.android.purebilibili.core.ui.motion.resolveBottomBarMotionSpec
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,44 +7,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DampedDragAnimationPolicyTest {
-
-    @Test
-    fun `release target caps fast fling to configured step count`() {
-        val motionSpec = resolveBottomBarMotionSpec()
-
-        val target = resolveDampedDragReleaseTargetIndex(
-            currentValue = 2.1f,
-            velocityPxPerSecond = 6400f,
-            itemWidthPx = 80f,
-            itemCount = 6,
-            motionSpec = motionSpec
-        )
-
-        assertEquals(3, target)
-    }
-
-    @Test
-    fun `release target clamps overscroll to bounds`() {
-        val motionSpec = resolveBottomBarMotionSpec()
-
-        val startTarget = resolveDampedDragReleaseTargetIndex(
-            currentValue = -0.42f,
-            velocityPxPerSecond = -2800f,
-            itemWidthPx = 72f,
-            itemCount = 5,
-            motionSpec = motionSpec
-        )
-        val endTarget = resolveDampedDragReleaseTargetIndex(
-            currentValue = 4.42f,
-            velocityPxPerSecond = 2800f,
-            itemWidthPx = 72f,
-            itemCount = 5,
-            motionSpec = motionSpec
-        )
-
-        assertEquals(0, startTarget)
-        assertEquals(4, endTarget)
-    }
 
     @Test
     fun `velocity conversion guards invalid item width`() {
@@ -59,43 +20,45 @@ class DampedDragAnimationPolicyTest {
     }
 
     @Test
-    fun `drag position snaps immediately while glass offset uses damped spring`() {
+    fun `shared drag animation mirrors KernelSU gesture and release target`() {
         val source = listOf(
             File("app/src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt"),
             File("src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt")
         ).first { it.exists() }.readText()
         val dragSource = source
             .substringAfter("fun onDrag(")
-            .substringBefore("fun setPressed(pressed: Boolean)")
+            .substringBefore("fun onDragEnd(")
         val releaseSource = source
             .substringAfter("fun onDragEnd(")
-            .substringBefore("fun updateIndex(index: Int)")
+            .substringBefore("fun setPressed(pressed: Boolean)")
 
-        // 指示器位置必须即时更新,否则底栏/首页指示器会像失去滑动能力。
-        // 玻璃偏移单独走阻尼弹簧,只过滤折射采样抖动。
-        assertTrue(source.contains("private val dragFollowSpring = spring<Float>("))
-        assertTrue(dragSource.contains("animatable.snapTo(newValue)"))
-        assertTrue(dragSource.contains("offsetAnimation.animateTo(desiredDragOffsetPx, dragFollowSpring)"))
-        assertFalse(dragSource.contains("animatable.animateTo(newValue, dragFollowSpring)"))
-        assertTrue(dragSource.contains("dragVelocityItemsPerSecond = resolveDampedDragVelocityItemsPerSecond("))
-        assertTrue(releaseSource.contains("animatable.animateTo("))
+        assertTrue(source.contains("private const val KERNEL_SU_PRESSED_SCALE = 78f / 56f"))
+        assertTrue(source.contains("private val valueAnimationSpec = spring(1f, 1000f, 0.001f)"))
+        assertTrue(source.contains("private val velocityAnimationSpec = spring(0.5f, 300f, 0.01f)"))
+        assertTrue(source.contains("inspectDragGestures("))
+        assertTrue(source.contains("awaitFirstDown(false, PointerEventPass.Initial)"))
+        assertTrue(dragSource.contains("updateValue(targetValue + dragAmountPx / itemWidthPx)"))
+        assertTrue(dragSource.contains("offsetAnimation.snapTo(offsetAnimation.value + dragAmountPx)"))
+        assertTrue(releaseSource.contains("targetValue.fastRoundToInt().fastCoerceIn(0, itemCount - 1)"))
         assertTrue(releaseSource.contains("offsetAnimation.animateTo(0f"))
+        assertFalse(source.contains("awaitHorizontalTouchSlopOrCancellation"))
+        assertFalse(source.contains("overscrollLimitItems"))
+        assertFalse(source.contains("resolveDampedDragReleaseTargetIndex("))
     }
 
     @Test
-    fun `drag velocity is spring filtered for indicator deformation`() {
+    fun `drag velocity uses KernelSU value tracker for indicator deformation`() {
         val source = listOf(
             File("app/src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt"),
             File("src/main/java/com/android/purebilibili/core/ui/animation/DampedDragAnimation.kt")
         ).first { it.exists() }.readText()
 
-        assertTrue(source.contains("private val deformationVelocitySpring = spring<Float>("))
-        assertTrue(source.contains("val deformationVelocityItemsPerSecond: Float get() = deformationVelocityAnimation.value"))
-        assertTrue(source.contains("deformationVelocityAnimation.animateTo("))
-        assertTrue(source.contains("targetValue = dragVelocityItemsPerSecond"))
-        assertTrue(source.contains("val velocity = velocityTracker.calculateVelocity()"))
-        assertTrue(source.contains("dragState.onDrag(dragAmount, itemWidthPx, velocity.x)"))
-        assertFalse(source.contains("get() = if (isDragging) dragVelocityItemsPerSecond else velocity"))
+        assertTrue(source.contains("val deformationVelocityItemsPerSecond: Float get() = velocityAnimation.value"))
+        assertTrue(source.contains("velocityTracker.addPosition("))
+        assertTrue(source.contains("velocityTracker.calculateVelocity().x"))
+        assertTrue(source.contains("velocityAnimation.animateTo(targetVelocity, velocityAnimationSpec)"))
+        assertFalse(source.contains("deformationVelocityAnimation"))
+        assertFalse(source.contains("dragVelocityItemsPerSecond"))
     }
 
     @Test
@@ -106,10 +69,10 @@ class DampedDragAnimationPolicyTest {
         ).first { it.exists() }.readText()
         val releaseSource = source
             .substringAfter("fun onDragEnd(")
-            .substringBefore("fun updateIndex(index: Int)")
+            .substringBefore("fun setPressed(pressed: Boolean)")
         val updateIndexSource = source
             .substringAfter("fun updateIndex(index: Int)")
-            .substringBefore("}\n}\n\n/**\n * 创建并记住阻尼拖拽动画状态")
+            .substringBefore("private fun updateVelocity()")
 
         assertTrue(source.contains("var settledReleaseCount by mutableIntStateOf(0)"))
         assertTrue(source.contains("var settledSelectionCount by mutableIntStateOf(0)"))
@@ -127,14 +90,11 @@ class DampedDragAnimationPolicyTest {
         ).first { it.exists() }.readText()
         val updateIndexSource = source
             .substringAfter("fun updateIndex(index: Int)")
-            .substringBefore("}\n}\n\n/**\n * 创建并记住阻尼拖拽动画状态")
+            .substringBefore("private fun updateVelocity()")
 
-        assertTrue(updateIndexSource.contains("pressProgressAnimation.animateTo(1f"))
-        assertTrue(updateIndexSource.contains("animatable.animateTo("))
-        assertTrue(updateIndexSource.contains("pressProgressAnimation.animateTo(0f"))
-        assertTrue(updateIndexSource.indexOf("pressProgressAnimation.animateTo(1f") <
-            updateIndexSource.indexOf("animatable.animateTo("))
-        assertTrue(updateIndexSource.indexOf("animatable.animateTo(") <
-            updateIndexSource.indexOf("pressProgressAnimation.animateTo(0f"))
+        assertTrue(updateIndexSource.contains("animateToValue(safeIndex.toFloat())"))
+        assertTrue(source.contains("fun animateToValue(value: Float, onSettled: (() -> Unit)? = null)"))
+        assertTrue(source.contains("press()"))
+        assertTrue(source.contains("release(onSettled = onSettled)"))
     }
 }

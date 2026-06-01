@@ -933,8 +933,9 @@ private fun LightweightHomeTopTabs(
         } else {
             0f
         }
-        val topTabIndicatorLayerScaleTransform = rememberKernelSuIndicatorDragScaleTransform(
-            active = topTabShouldStretchIndicator || topTabPressProgress > 0.001f
+        val topTabIndicatorLayerScaleTransform = BottomBarIndicatorLayerTransform(
+            scaleX = topTabDragState.scaleX,
+            scaleY = topTabDragState.scaleY
         )
         val topTabIndicatorLayerTransform = resolveBottomBarIndicatorLayerTransform(
             motionProgress = topTabPressProgress,

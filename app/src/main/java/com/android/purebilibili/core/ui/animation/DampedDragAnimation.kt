@@ -3,24 +3,43 @@ package com.android.purebilibili.core.ui.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.horizontalDrag
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.fastRoundToInt
 import com.android.purebilibili.core.ui.motion.BottomBarMotionSpec
 import com.android.purebilibili.core.ui.motion.resolveBottomBarMotionSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.math.sign
 
 internal fun resolveDampedDragVelocityItemsPerSecond(
     velocityPxPerSecond: Float,
@@ -30,101 +49,64 @@ internal fun resolveDampedDragVelocityItemsPerSecond(
     return velocityPxPerSecond / itemWidthPx
 }
 
-internal fun resolveDampedDragReleaseTargetIndex(
-    currentValue: Float,
-    velocityPxPerSecond: Float,
-    itemWidthPx: Float,
-    itemCount: Int,
-    motionSpec: BottomBarMotionSpec
-): Int {
-    if (itemCount <= 0) return 0
-    val velocityItems = resolveDampedDragVelocityItemsPerSecond(
-        velocityPxPerSecond = velocityPxPerSecond,
-        itemWidthPx = itemWidthPx
-    )
-    val projectedValue = currentValue + velocityItems * motionSpec.drag.flingProjectionTimeSeconds
-    var nextIndex = projectedValue.roundToInt()
-    val baseIndex = currentValue.roundToInt()
-    val maxReleaseStep = motionSpec.drag.maxReleaseStepCount.coerceAtLeast(1)
-    if (abs(nextIndex - baseIndex) > maxReleaseStep) {
-        nextIndex = baseIndex + (nextIndex - baseIndex).sign * maxReleaseStep
-    }
-    return nextIndex.coerceIn(0, itemCount - 1)
-}
-
 /**
- * 🌊 阻尼拖拽动画状态
- * 
- * 实现类似 LiquidBottomTabs 的手势跟随效果：
- * - 拖拽时平滑跟随手指
- * - 释放后弹回吸附到最近选项
- * - 支持速度感知的弹性形变
+ * 共享的 KernelSU 指示器拖拽动画状态。
+ *
+ * 复刻来源：
+ * KernelSU manager FloatingBottomBar / DampedDragAnimation / DragGestureInspector，
+ * commit 778fb38bbf0c43f168b8bbd7d9e369d6fb46754b。
+ * 底栏、顶部标签、分段控件、分区侧栏共用此内核，避免各自维护一套速度形变。
  */
 internal class DampedDragAnimationState(
     initialIndex: Int,
     private val itemCount: Int,
     private val scope: CoroutineScope,
     private val onIndexChanged: (Int) -> Unit,
-    private val motionSpec: BottomBarMotionSpec,
+    @Suppress("UNUSED_PARAMETER") private val motionSpec: BottomBarMotionSpec,
     private val notifyIndexChangedOnReleaseStart: Boolean = false,
-    private val holdPressUntilReleaseTargetSettles: Boolean = false
+    @Suppress("UNUSED_PARAMETER") private val holdPressUntilReleaseTargetSettles: Boolean = false
 ) {
-    /** 当前动画值（浮点索引，用于平滑过渡） */
-    private val animatable = Animatable(initialIndex.toFloat())
-    
-    /** 按压进度动画 (0f = 释放, 1f = 按下) — 参考 LiquidBottomTabs */
+    private val valueAnimationSpec = spring(1f, 1000f, 0.001f)
+    private val velocityAnimationSpec = spring(0.5f, 300f, 0.01f)
+    private val pressProgressAnimationSpec = spring(1f, 1000f, 0.001f)
+    private val scaleXAnimationSpec = spring(0.6f, 250f, 0.001f)
+    private val scaleYAnimationSpec = spring(0.7f, 250f, 0.001f)
+    private val offsetSnapAnimationSpec = spring(1f, 300f, 0.5f)
+
+    private val valueAnimation = Animatable(initialIndex.toFloat(), 0.001f)
+    private val velocityAnimation = Animatable(0f, 5f)
     private val pressProgressAnimation = Animatable(0f, 0.001f)
-    
-    /** 累计拖拽偏移量 (px) — 用于面板偏移效果 */
+    private val scaleXAnimation = Animatable(1f, 0.001f)
+    private val scaleYAnimation = Animatable(1f, 0.001f)
     private val offsetAnimation = Animatable(0f)
+    private val mutatorMutex = MutatorMutex()
+    private val velocityTracker = VelocityTracker()
 
-    /**
-     * 玻璃偏移跟手弹簧：位置仍 snapTo 保证指示器即时滑动,
-     * 折射偏移单独用临界阻尼过滤输入采样抖动。
-     */
-    private val dragFollowSpring = spring<Float>(
-        dampingRatio = 1f,
-        stiffness = 1000f,
-        visibilityThreshold = 0.001f
-    )
-    private val deformationVelocitySpring = spring<Float>(
-        dampingRatio = 0.5f,
-        stiffness = 300f,
-        visibilityThreshold = 0.001f
-    )
-    
-    /** 当前动画位置 */
-    val value: Float get() = animatable.value
-    
-    /** 当前索引速度（items/s，用于 capsule 形变等索引空间动画） */
-    val velocity: Float get() = animatable.velocity
+    private var motionGeneration = 0
+    private var valueJob: Job? = null
+    private var velocityJob: Job? = null
+    private var releaseJob: Job? = null
+    private var offsetJob: Job? = null
 
-    /** 指示器形变速度：拖拽时来自实时手势速度，释放后回到动画速度。 */
-    val deformationVelocityItemsPerSecond: Float get() = deformationVelocityAnimation.value
+    val value: Float get() = valueAnimation.value
+    val targetValue: Float get() = valueAnimation.targetValue
+    val velocity: Float get() = velocityAnimation.value
+    val deformationVelocityItemsPerSecond: Float get() = velocityAnimation.value
+    val pressProgress: Float get() = pressProgressAnimation.value
+    val scaleX: Float get() = scaleXAnimation.value
+    val scaleY: Float get() = scaleYAnimation.value
+    val scale: Float get() = maxOf(scaleX, scaleY)
+    val dragOffset: Float get() = offsetAnimation.value
+    val isRunning: Boolean get() = valueAnimation.isRunning
 
-    /** 最近一次释放手势的像素速度（px/s，用于折射/透镜强度） */
     var velocityPxPerSecond by mutableFloatStateOf(0f)
         private set
-    
-    /** 按压进度 (0f..1f) */
-    val pressProgress: Float get() = pressProgressAnimation.value
-    
-    /** 累计拖拽偏移量 (px) */
-    val dragOffset: Float get() = offsetAnimation.value
-    
-    /** 是否正在拖拽 */
+
     var isDragging by mutableStateOf(false)
         private set
-    
-    /** 拖拽时的缩放比例 */
-    val scale: Float get() = if (isDragging) 1.1f else 1f
-    
-    /** 目标索引（释放后吸附的目标） */
+
     var targetIndex = initialIndex
         private set
-    
-    /** 动画是否正在运行 */
-    val isRunning: Boolean get() = animatable.isRunning
 
     var settledReleaseCount by mutableIntStateOf(0)
         private set
@@ -132,27 +114,63 @@ internal class DampedDragAnimationState(
     var settledSelectionCount by mutableIntStateOf(0)
         private set
 
-    private var desiredValue = initialIndex.toFloat()
-    private var desiredDragOffsetPx = 0f
-    private var dragVelocityItemsPerSecond by mutableFloatStateOf(0f)
-    private var motionGeneration = 0
-    private var positionJob: Job? = null
-    private var pressJob: Job? = null
-    private var selectionJob: Job? = null
-    private var offsetJob: Job? = null
-    private val deformationVelocityAnimation = Animatable(0f, 0.001f)
-    private var deformationVelocityJob: Job? = null
-
     private fun startNewMotion(): Int {
         motionGeneration += 1
         return motionGeneration
     }
 
-    /**
-     * 处理拖拽事件
-     * @param dragAmountPx 拖拽像素距离
-     * @param itemWidthPx 单个项目宽度（像素）
-     */
+    fun press() {
+        velocityTracker.resetTracking()
+        releaseJob?.cancel()
+        releaseJob = scope.launch {
+            launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
+            launch { scaleXAnimation.animateTo(KERNEL_SU_PRESSED_SCALE, scaleXAnimationSpec) }
+            launch { scaleYAnimation.animateTo(KERNEL_SU_PRESSED_SCALE, scaleYAnimationSpec) }
+        }
+    }
+
+    fun release(onSettled: (() -> Unit)? = null) {
+        releaseJob?.cancel()
+        releaseJob = scope.launch {
+            awaitFrame()
+            if (value != targetValue) {
+                val threshold = ((itemCount - 1).toFloat() * 0.025f).coerceAtLeast(0.001f)
+                snapshotFlow { valueAnimation.value }
+                    .filter { abs(it - valueAnimation.targetValue) < threshold }
+                    .first()
+            }
+            onSettled?.invoke()
+            launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
+            launch { scaleXAnimation.animateTo(1f, scaleXAnimationSpec) }
+            launch { scaleYAnimation.animateTo(1f, scaleYAnimationSpec) }
+        }
+    }
+
+    fun updateValue(value: Float) {
+        val nextTarget = value.fastCoerceIn(0f, (itemCount - 1).toFloat())
+        valueJob?.cancel()
+        valueJob = scope.launch {
+            valueAnimation.animateTo(nextTarget, valueAnimationSpec) { updateVelocity() }
+        }
+    }
+
+    fun animateToValue(value: Float, onSettled: (() -> Unit)? = null) {
+        scope.launch {
+            mutatorMutex.mutate {
+                press()
+                val nextTarget = value.fastCoerceIn(0f, (itemCount - 1).toFloat())
+                targetIndex = nextTarget.roundToInt().coerceIn(0, itemCount - 1)
+                valueJob?.cancel()
+                valueJob = launch { valueAnimation.animateTo(nextTarget, valueAnimationSpec) }
+                if (velocity != 0f) {
+                    velocityJob?.cancel()
+                    velocityJob = launch { velocityAnimation.animateTo(0f, velocityAnimationSpec) }
+                }
+                release(onSettled = onSettled)
+            }
+        }
+    }
+
     fun onDrag(
         dragAmountPx: Float,
         itemWidthPx: Float,
@@ -162,103 +180,19 @@ internal class DampedDragAnimationState(
         if (!isDragging) {
             isDragging = true
             startNewMotion()
-            selectionJob?.cancel()
-            positionJob?.cancel()
+            valueJob?.cancel()
             offsetJob?.cancel()
-            desiredValue = animatable.value
-            desiredDragOffsetPx = offsetAnimation.value
             velocityPxPerSecond = 0f
-            dragVelocityItemsPerSecond = 0f
-            deformationVelocityJob?.cancel()
-            // 按压缩放 — 参考 LiquidBottomTabs press()
-            pressJob?.cancel()
-            pressJob = scope.launch {
-                pressProgressAnimation.animateTo(1f, motionSpec.drag.pressSpring.toSpringSpec())
-            }
+            press()
         }
-        dragVelocityItemsPerSecond = resolveDampedDragVelocityItemsPerSecond(
-            velocityPxPerSecond = gestureVelocityPxPerSecond,
-            itemWidthPx = itemWidthPx
-        )
-        deformationVelocityJob?.cancel()
-        deformationVelocityJob = scope.launch {
-            deformationVelocityAnimation.animateTo(
-                targetValue = dragVelocityItemsPerSecond,
-                animationSpec = deformationVelocitySpring
-            )
-        }
-        
-        // [优化] 橡皮筋阻尼物理：
-        val currentValue = desiredValue
-        val isOverscrolling = currentValue < 0f || currentValue > (itemCount - 1).toFloat()
-        
-        // [调整] 提升灵敏度系数 (0.6 -> 1.0) 确保完全跟手
-        val baseResistance = motionSpec.drag.baseResistance
-        val overscrollResistance = motionSpec.drag.overscrollResistance
-
-        // 允许边缘回弹：放宽限制范围
-        val newValue = (
-            desiredValue +
-                (dragAmountPx / itemWidthPx) *
-                if (isOverscrolling) overscrollResistance else baseResistance
-            )
-            .fastCoerceIn(
-                -motionSpec.drag.overscrollLimitItems,
-                (itemCount - 1).toFloat() + motionSpec.drag.overscrollLimitItems
-            )
-        desiredValue = newValue
-        // 累计偏移量 — 用于面板偏移
-        desiredDragOffsetPx += dragAmountPx
-
-        // 指示器位置必须即时跟手;玻璃折射偏移单独阻尼,过滤拖拽采样抖动。
-        positionJob?.cancel()
+        velocityPxPerSecond = gestureVelocityPxPerSecond
+        updateValue(targetValue + dragAmountPx / itemWidthPx)
         offsetJob?.cancel()
-        positionJob = scope.launch {
-            animatable.snapTo(newValue)
-        }
         offsetJob = scope.launch {
-            offsetAnimation.animateTo(desiredDragOffsetPx, dragFollowSpring)
+            offsetAnimation.snapTo(offsetAnimation.value + dragAmountPx)
         }
     }
 
-    fun setPressed(pressed: Boolean) {
-        pressJob?.cancel()
-        pressJob = scope.launch {
-            if (pressed) {
-                pressProgressAnimation.animateTo(1f, motionSpec.drag.pressSpring.toSpringSpec())
-            } else if (!isDragging) {
-                pressProgressAnimation.animateTo(0f, motionSpec.drag.pressSpring.toSpringSpec())
-            }
-        }
-    }
-    
-    /**
-     * 立即跳转到指定位置（无动画）
-     */
-    fun snapTo(targetValue: Float) {
-        // 更新目标索引以防止 offset 累积误差
-        val generation = startNewMotion()
-        selectionJob?.cancel()
-        positionJob?.cancel()
-        desiredValue = targetValue
-        dragVelocityItemsPerSecond = 0f
-        targetIndex = targetValue.roundToInt().coerceIn(0, itemCount - 1)
-        deformationVelocityJob?.cancel()
-        deformationVelocityJob = scope.launch {
-            deformationVelocityAnimation.snapTo(0f)
-        }
-        positionJob = scope.launch {
-            if (generation != motionGeneration) return@launch
-            animatable.stop()
-            animatable.snapTo(targetValue)
-        }
-    }
-
-    /**
-     * 处理拖拽结束 (带速度感知)
-     * @param velocityX 水平速度 (px/s)
-     * @param itemWidthPx 项目宽度 (px)
-     */
     fun onDragEnd(
         velocityX: Float,
         itemWidthPx: Float,
@@ -269,129 +203,80 @@ internal class DampedDragAnimationState(
         isDragging = false
         val generation = motionGeneration
         velocityPxPerSecond = velocityX
-        
-        val currentValue = desiredValue
-        
-        // [核心优化] 基于速度的意图判断 (Fling Logic)
-        // 1. 计算这一帧的归一化速度 (items/sec)
-        val velocityItems = resolveDampedDragVelocityItemsPerSecond(
-            velocityPxPerSecond = velocityX,
-            itemWidthPx = itemWidthPx
-        )
         val releaseTargetIndex = settleIndex?.coerceIn(0, itemCount - 1)
-            ?: resolveDampedDragReleaseTargetIndex(
-                currentValue = currentValue,
-                velocityPxPerSecond = velocityX,
-                itemWidthPx = itemWidthPx,
-                itemCount = itemCount,
-                motionSpec = motionSpec
-            )
+            ?: targetValue.fastRoundToInt().fastCoerceIn(0, itemCount - 1)
         targetIndex = releaseTargetIndex
-        desiredValue = releaseTargetIndex.toFloat()
         if (notifyIndexChanged && notifyIndexChangedOnReleaseStart) {
             onIndexChanged(releaseTargetIndex)
         }
-        
-        selectionJob?.cancel()
-        selectionJob = scope.launch {
-            positionJob?.cancel()
-            animatable.animateTo(
-                targetValue = releaseTargetIndex.toFloat(),
-                animationSpec = motionSpec.drag.selectionSpring.toSpringSpec(),
-                initialVelocity = velocityItems
-            )
+        animateToValue(releaseTargetIndex.toFloat()) {
             if (generation == motionGeneration) {
                 velocityPxPerSecond = 0f
-                dragVelocityItemsPerSecond = 0f
-                deformationVelocityJob?.cancel()
-                deformationVelocityJob = launch {
-                    deformationVelocityAnimation.animateTo(0f, deformationVelocitySpring)
-                }
                 settledReleaseCount += 1
                 if (notifyIndexChanged && !notifyIndexChangedOnReleaseStart) {
                     onIndexChanged(releaseTargetIndex)
                 }
             }
         }
-        // 释放按压缩放 — 参考 LiquidBottomTabs release()
-        pressJob?.cancel()
-        pressJob = scope.launch {
-            if (holdPressUntilReleaseTargetSettles) {
-                val threshold = ((itemCount - 1).toFloat() * 0.025f).coerceAtLeast(0.001f)
-                snapshotFlow { animatable.value }
-                    .filter { abs(it - releaseTargetIndex.toFloat()) < threshold }
-                    .first()
-            }
-            pressProgressAnimation.animateTo(0f, motionSpec.drag.pressSpring.toSpringSpec())
-        }
-        // 偏移量归零 — 弹性回弹
-        desiredDragOffsetPx = 0f
         offsetJob?.cancel()
         offsetJob = scope.launch {
-            offsetAnimation.animateTo(0f, motionSpec.drag.offsetSnapSpring.toSpringSpec())
+            offsetAnimation.animateTo(0f, offsetSnapAnimationSpec)
         }
     }
-    
-    /**
-     * 外部更新选中索引（点击选择时）
-     */
+
+    fun setPressed(pressed: Boolean) {
+        if (pressed) {
+            press()
+        } else if (!isDragging) {
+            release()
+        }
+    }
+
+    fun snapTo(targetValue: Float) {
+        val generation = startNewMotion()
+        valueJob?.cancel()
+        targetIndex = targetValue.roundToInt().coerceIn(0, itemCount - 1)
+        scope.launch {
+            if (generation != motionGeneration) return@launch
+            valueAnimation.stop()
+            valueAnimation.snapTo(targetValue)
+            velocityAnimation.snapTo(0f)
+        }
+    }
+
     fun updateIndex(index: Int) {
-        // [修复] 拖拽过程中忽略外部更新，防止动画中断
-        if (isDragging) return
-        
-        // [Fix] Check actual value distance. 
-        // If targetIndex matches but we are stuck at an offset (e.g. 2.8 vs 3.0 via snapTo), 
-        // we MUST force restart the animation.
+        if (isDragging || itemCount <= 0) return
+        val safeIndex = index.coerceIn(0, itemCount - 1)
         if (
-            index == targetIndex &&
+            safeIndex == targetIndex &&
             (
                 isRunning ||
-                    abs(value - index.toFloat()) < 0.005f ||
-                    abs(desiredValue - index.toFloat()) < 0.005f
+                    abs(value - safeIndex.toFloat()) < 0.005f ||
+                    abs(targetValue - safeIndex.toFloat()) < 0.005f
                 )
         ) return
-        val generation = startNewMotion()
-        selectionJob?.cancel()
-        positionJob?.cancel()
+        startNewMotion()
+        targetIndex = safeIndex
         velocityPxPerSecond = 0f
-        targetIndex = index
-        desiredValue = index.toFloat()
-        dragVelocityItemsPerSecond = 0f
-        deformationVelocityJob?.cancel()
-        deformationVelocityJob = scope.launch {
-            deformationVelocityAnimation.snapTo(0f)
+        animateToValue(safeIndex.toFloat()) {
+            settledSelectionCount += 1
         }
-        selectionJob = scope.launch {
-            if (generation != motionGeneration) return@launch
-            pressJob?.cancel()
-            pressJob = launch {
-                pressProgressAnimation.animateTo(1f, motionSpec.drag.pressSpring.toSpringSpec())
-            }
-            val releaseTargetValue = index.toFloat()
-            launch {
-                animatable.animateTo(
-                    targetValue = releaseTargetValue,
-                    animationSpec = motionSpec.drag.selectionSpring.toSpringSpec()
-                )
-            }
-            launch {
-                // 对齐 KSU：切换动画接近目标后释放按压形变，而不是等弹簧完全静止。
-                val threshold = ((itemCount - 1).toFloat() * 0.025f).coerceAtLeast(0.001f)
-                snapshotFlow { animatable.value }
-                    .filter { abs(it - releaseTargetValue) < threshold }
-                    .first()
-                if (generation == motionGeneration) {
-                    settledSelectionCount += 1
-                }
-                pressProgressAnimation.animateTo(0f, motionSpec.drag.pressSpring.toSpringSpec())
-            }
-        }
+    }
+
+    private fun updateVelocity() {
+        velocityTracker.addPosition(
+            System.currentTimeMillis(),
+            Offset(value, 0f)
+        )
+        val denominator = (itemCount - 1).toFloat().coerceAtLeast(1f)
+        val targetVelocity = velocityTracker.calculateVelocity().x / denominator
+        velocityJob?.cancel()
+        velocityJob = scope.launch { velocityAnimation.animateTo(targetVelocity, velocityAnimationSpec) }
     }
 }
 
-/**
- * 创建并记住阻尼拖拽动画状态
- */
+private const val KERNEL_SU_PRESSED_SCALE = 78f / 56f
+
 @Composable
 internal fun rememberDampedDragAnimationState(
     initialIndex: Int,
@@ -403,7 +288,7 @@ internal fun rememberDampedDragAnimationState(
 ): DampedDragAnimationState {
     val scope = rememberCoroutineScope()
     val currentOnIndexChanged by rememberUpdatedState(onIndexChanged)
-    
+
     return remember(
         itemCount,
         motionSpec,
@@ -422,9 +307,6 @@ internal fun rememberDampedDragAnimationState(
     }
 }
 
-/**
- * 水平拖拽手势 Modifier (带速度追踪)
- */
 internal fun Modifier.horizontalDragGesture(
     dragState: DampedDragAnimationState,
     itemWidthPx: Float,
@@ -438,63 +320,96 @@ internal fun Modifier.horizontalDragGesture(
     settleIndex,
     notifyIndexChanged
 ) {
-    val velocityTracker = VelocityTracker()
-    
-    awaitPointerEventScope {
-        while (true) {
-            // [Fix] Allow gesture to start even if child (clickable) consumed the DOWN event
-            val down = awaitFirstDown(requireUnconsumed = false)
-            velocityTracker.resetTracking()
-            velocityTracker.addPosition(down.uptimeMillis, down.position)
-            
-            // [Fix] Wait for touch slop before claiming the gesture (to distinguish from tap)
-            val dragStart = awaitHorizontalTouchSlopOrCancellation(down.id) { change, over ->
-                if (consumePointerChanges) {
-                    change.consume()
-                }
-                dragState.onDrag(over, itemWidthPx)
-            }
+    inspectDragGestures(
+        onDragStart = { dragState.onDrag(0f, itemWidthPx) },
+        onDragEnd = {
+            dragState.onDragEnd(
+                velocityX = 0f,
+                itemWidthPx = itemWidthPx,
+                settleIndex = settleIndex,
+                notifyIndexChanged = notifyIndexChanged
+            )
+        },
+        onDragCancel = {
+            dragState.onDragEnd(
+                velocityX = 0f,
+                itemWidthPx = itemWidthPx,
+                settleIndex = settleIndex,
+                notifyIndexChanged = notifyIndexChanged
+            )
+        }
+    ) { change, dragAmount ->
+        if (consumePointerChanges) {
+            change.consume()
+        }
+        dragState.onDrag(dragAmount.x, itemWidthPx)
+    }
+}
 
-            if (dragStart != null) {
-                // Drag confirmed
-                velocityTracker.addPosition(dragStart.uptimeMillis, dragStart.position)
-                
-                var isCancelled = false
-                
-                // Continue handling drag events
-                try {
-                     horizontalDrag(dragStart.id) { change ->
-                        if (consumePointerChanges) {
-                            change.consume()
-                        }
-                        velocityTracker.addPosition(change.uptimeMillis, change.position)
-                        
-                        val dragAmount = change.position.x - change.previousPosition.x
-                        val velocity = velocityTracker.calculateVelocity()
-                        dragState.onDrag(dragAmount, itemWidthPx, velocity.x)
-                    }
-                } catch (e: Exception) {
-                    isCancelled = true
-                }
-                
-                // Drag ended
-                if (!isCancelled) {
-                    val velocity = velocityTracker.calculateVelocity()
-                    dragState.onDragEnd(
-                        velocityX = velocity.x,
-                        itemWidthPx = itemWidthPx,
-                        settleIndex = settleIndex,
-                        notifyIndexChanged = notifyIndexChanged
-                    )
-                } else {
-                    // Cancelled
-                    dragState.onDragEnd(
-                        velocityX = 0f,
-                        itemWidthPx = itemWidthPx,
-                        settleIndex = settleIndex,
-                        notifyIndexChanged = notifyIndexChanged
-                    )
-                }
+internal suspend fun PointerInputScope.inspectDragGestures(
+    onDragStart: (down: PointerInputChange) -> Unit = {},
+    onDragEnd: (change: PointerInputChange) -> Unit = {},
+    onDragCancel: () -> Unit = {},
+    onDrag: (change: PointerInputChange, dragAmount: Offset) -> Unit
+) {
+    awaitEachGesture {
+        val initialDown = awaitFirstDown(false, PointerEventPass.Initial)
+        val down = awaitFirstDown(false)
+
+        onDragStart(down)
+        onDrag(initialDown, Offset.Zero)
+        val upEvent = drag(
+            pointerId = initialDown.id,
+            onDrag = { onDrag(it, it.positionChange()) }
+        )
+        if (upEvent == null) {
+            onDragCancel()
+        } else {
+            onDragEnd(upEvent)
+        }
+    }
+}
+
+private suspend inline fun AwaitPointerEventScope.drag(
+    pointerId: PointerId,
+    onDrag: (PointerInputChange) -> Unit
+): PointerInputChange? {
+    val isPointerUp = currentEvent.changes.fastFirstOrNull { it.id == pointerId }?.pressed != true
+    if (isPointerUp) {
+        return null
+    }
+    var pointer = pointerId
+    while (true) {
+        val change = awaitDragOrUp(pointer) ?: return null
+        if (change.isConsumed) {
+            return null
+        }
+        if (change.changedToUpIgnoreConsumed()) {
+            return change
+        }
+        onDrag(change)
+        pointer = change.id
+    }
+}
+
+private suspend inline fun AwaitPointerEventScope.awaitDragOrUp(
+    pointerId: PointerId
+): PointerInputChange? {
+    var pointer = pointerId
+    while (true) {
+        val event = awaitPointerEvent()
+        val dragEvent = event.changes.fastFirstOrNull { it.id == pointer } ?: return null
+        if (dragEvent.changedToUpIgnoreConsumed()) {
+            val otherDown = event.changes.fastFirstOrNull { it.pressed }
+            if (otherDown == null) {
+                return dragEvent
+            } else {
+                pointer = otherDown.id
+            }
+        } else {
+            val hasDragged = dragEvent.previousPosition != dragEvent.position
+            if (hasDragged) {
+                return dragEvent
             }
         }
     }
