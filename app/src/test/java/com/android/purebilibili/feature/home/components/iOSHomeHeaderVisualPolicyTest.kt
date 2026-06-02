@@ -147,15 +147,22 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
-    fun `search content export layer stays disabled to avoid scroll flicker`() {
-        val active = resolveHomeTopSearchRefractionLayerPolicy(
+    fun `search content export layer only runs for stable liquid glass`() {
+        val scrolling = resolveHomeTopSearchRefractionLayerPolicy(
             renderMode = HomeTopChromeRenderMode.LIQUID_GLASS_BACKDROP,
             hasBackdrop = true,
-            searchRevealFraction = 0.82f,
+            searchRevealFraction = 1f,
             isScrolling = true,
             isTransitionRunning = false
         )
-        val idle = resolveHomeTopSearchRefractionLayerPolicy(
+        val stable = resolveHomeTopSearchRefractionLayerPolicy(
+            renderMode = HomeTopChromeRenderMode.LIQUID_GLASS_BACKDROP,
+            hasBackdrop = true,
+            searchRevealFraction = 1f,
+            isScrolling = false,
+            isTransitionRunning = false
+        )
+        val collapsing = resolveHomeTopSearchRefractionLayerPolicy(
             renderMode = HomeTopChromeRenderMode.LIQUID_GLASS_BACKDROP,
             hasBackdrop = true,
             searchRevealFraction = 0.82f,
@@ -165,21 +172,24 @@ class iOSHomeHeaderVisualPolicyTest {
         val blur = resolveHomeTopSearchRefractionLayerPolicy(
             renderMode = HomeTopChromeRenderMode.BLUR,
             hasBackdrop = true,
-            searchRevealFraction = 0.82f,
-            isScrolling = true,
+            searchRevealFraction = 1f,
+            isScrolling = false,
             isTransitionRunning = false
         )
 
-        assertFalse(active.captureContentLayer)
-        assertFalse(active.useExportedBackdrop)
-        assertEquals(0f, active.overlayAlpha, 0.0001f)
-        assertEquals(1f, active.visibleContentAlpha, 0.0001f)
-        assertEquals(0f, active.exportTranslationMultiplier, 0.0001f)
-        assertFalse(idle.captureContentLayer)
-        assertFalse(idle.useExportedBackdrop)
-        assertEquals(0f, idle.overlayAlpha, 0.0001f)
-        assertEquals(1f, idle.visibleContentAlpha, 0.0001f)
-        assertEquals(0f, idle.exportTranslationMultiplier, 0.0001f)
+        assertFalse(scrolling.captureContentLayer)
+        assertFalse(scrolling.useExportedBackdrop)
+        assertEquals(0f, scrolling.overlayAlpha, 0.0001f)
+        assertEquals(1f, scrolling.visibleContentAlpha, 0.0001f)
+        assertEquals(0f, scrolling.exportTranslationMultiplier, 0.0001f)
+        assertTrue(stable.captureContentLayer)
+        assertTrue(stable.useExportedBackdrop)
+        assertEquals(1f, stable.overlayAlpha, 0.0001f)
+        assertEquals(1f, stable.visibleContentAlpha, 0.0001f)
+        assertEquals(1f, stable.exportTranslationMultiplier, 0.0001f)
+        assertFalse(collapsing.captureContentLayer)
+        assertFalse(collapsing.useExportedBackdrop)
+        assertEquals(0f, collapsing.overlayAlpha, 0.0001f)
         assertFalse(blur.captureContentLayer)
         assertFalse(blur.useExportedBackdrop)
         assertEquals(0f, blur.overlayAlpha, 0.0001f)

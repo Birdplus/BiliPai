@@ -111,6 +111,8 @@ internal data class HomeTopSearchRefractionLayerPolicy(
     val exportTranslationMultiplier: Float
 )
 
+private const val HOME_TOP_SEARCH_REFRACTION_MIN_REVEAL_FRACTION = 0.96f
+
 internal data class HomeTopLinkedBottomBarAppearance(
     val isFloating: Boolean,
     val blurEnabled: Boolean,
@@ -279,15 +281,18 @@ internal fun resolveHomeTopSearchRefractionLayerPolicy(
     isScrolling: Boolean,
     isTransitionRunning: Boolean
 ): HomeTopSearchRefractionLayerPolicy {
+    val shouldRefract = renderMode == HomeTopChromeRenderMode.LIQUID_GLASS_BACKDROP &&
+        hasBackdrop &&
+        searchRevealFraction >= HOME_TOP_SEARCH_REFRACTION_MIN_REVEAL_FRACTION &&
+        !isScrolling &&
+        !isTransitionRunning
     return HomeTopSearchRefractionLayerPolicy(
-        // Keep the search pill on a single stable glass layer.
-        // The extra exported refraction overlay was causing visible flicker
-        // when vertical scrolling started or stopped.
-        captureContentLayer = false,
-        useExportedBackdrop = false,
-        overlayAlpha = 0f,
+        // 折射层只在搜索栏稳定展开时开启，滚动和转场阶段仍避免额外导出层闪烁。
+        captureContentLayer = shouldRefract,
+        useExportedBackdrop = shouldRefract,
+        overlayAlpha = if (shouldRefract) 1f else 0f,
         visibleContentAlpha = 1f,
-        exportTranslationMultiplier = 0f
+        exportTranslationMultiplier = if (shouldRefract) 1f else 0f
     )
 }
 
