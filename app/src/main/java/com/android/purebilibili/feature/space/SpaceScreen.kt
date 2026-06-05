@@ -91,6 +91,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
+import coil.size.Scale
 import com.android.purebilibili.R
 import com.android.purebilibili.core.ui.AdaptiveScaffold
 import com.android.purebilibili.core.ui.AdaptiveTopAppBar
@@ -1758,6 +1759,8 @@ private fun SpaceHeader(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(topPhotoUrl)
+                        .size(1440, 900)
+                        .scale(Scale.FILL)
                         .crossfade(true)
                         .build(),
                     contentDescription = null,

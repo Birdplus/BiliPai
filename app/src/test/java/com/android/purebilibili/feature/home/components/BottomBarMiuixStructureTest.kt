@@ -37,6 +37,8 @@ class BottomBarMiuixStructureTest {
         assertTrue(kernelSuRendererSource.contains("hasUiSkinDecoration = uiSkinDecoration != null"))
         assertTrue(source.contains("val shellHeight = if (dockHeight > searchHeight) dockHeight else searchHeight"))
         assertTrue(kernelSuRendererSource.contains("KernelSuBottomBarSearchSlot("))
+        assertTrue(kernelSuRendererSource.contains("materialMotionProgress = 0f"))
+        assertTrue(kernelSuRendererSource.contains("materialPressProgress = 0f"))
         assertTrue(source.contains("KernelSuBottomBarSearchCapsule("))
         assertTrue(source.contains("val collapsedSearchWidth = searchCircleSize"))
         assertTrue(source.contains("label = \"bottomBarDockWidth\""))

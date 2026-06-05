@@ -1,5 +1,27 @@
 # Changelog
 
+## v9.1.0 (2026-06-05)
+
+### 版本信息
+- 版本号从 `9.0.7` 升级到 `9.1.0`，`versionCode` 升级到 `221`。
+
+### 更新内容
+- **底栏搜索入口稳定性**：修复液态玻璃指示器左右滑动时，旁边搜索框跟随指示器形变放大的问题，搜索入口保持独立尺寸。
+- **个人空间崩溃修复**：根据 `9.0.3 (216)` 崩溃日志定位到空间背景图绘制超大 bitmap，限制个人页沉浸背景、个人空间封面和公开空间封面的 Coil 解码尺寸，避免 `Canvas: trying to draw too large bitmap` 闪退。
+- **个人空间资料可读性优化**：个人空间签名和 IP 属地不再硬编码两行文案，改为使用真实签名、真实 IP 属地和隐私兜底；IP/性别信息改为深浅色都可读的小胶囊。
+- **Release 混淆保护**：补充首页视频卡片圆角、主题圆角缩放、共享元素过渡相关最小 keep 规则，降低 R8 优化后视觉状态回归风险。
+
+### 近期版本简述
+- `9.0.3`：稳定性与流畅度维护。
+- `9.0.4`：当前 `CHANGELOG.md` 未单列，内容已并入后续维护记录。
+- `9.0.5`：修复设置圆角、评论冻结条、播放器双击/后台播放、沉浸模式和首页布局问题。
+- `9.0.6`：解决已知问题，并通过 Debug Kotlin 编译验证。
+- `9.0.7`：继续解决已知问题，并通过 Debug Kotlin 编译验证。
+
+### 验证
+- `./gradlew :app:testDebugUnitTest --tests 'com.android.purebilibili.feature.home.components.BottomBarMiuixStructureTest' --tests 'com.android.purebilibili.feature.profile.ProfileSpacePolicyTest' --tests 'com.android.purebilibili.feature.profile.ProfileWallpaperActionLayoutPolicyTest'`
+- `./gradlew :app:compileDebugKotlin`
+
 ## v9.0.7 (2026-06-05)
 
 ### 版本信息

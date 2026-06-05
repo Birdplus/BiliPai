@@ -3791,8 +3791,8 @@ private fun KernelSuAlignedBottomBar(
                     liquidGlassPreset = liquidGlassPreset,
                     isScrolling = isFeedScrollInProgress,
                     materialScrollProgress = materialScrollProgress,
-                    materialMotionProgress = motionProgress,
-                    materialPressProgress = effectivePressProgress
+                    materialMotionProgress = 0f,
+                    materialPressProgress = 0f
                 )
         }
     }
