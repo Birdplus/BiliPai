@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned // [New]
 import com.android.purebilibili.core.store.SettingsManager // [New]
 import com.android.purebilibili.core.ui.blur.BlurStyles // [New]
+import com.android.purebilibili.core.ui.blur.BlurSurfaceType
 import com.android.purebilibili.core.ui.blur.currentUnifiedBlurIntensity
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
@@ -520,7 +521,10 @@ fun CommonListScreen(
     val topBarBackgroundModifier = if (shouldUseHeaderLocalBlur) {
         Modifier
             .fillMaxWidth()
-            .unifiedBlur(localHazeState)
+            .unifiedBlur(
+                hazeState = localHazeState,
+                surfaceType = BlurSurfaceType.HEADER
+            )
             .background(headerBackgroundColor)
     } else {
         Modifier

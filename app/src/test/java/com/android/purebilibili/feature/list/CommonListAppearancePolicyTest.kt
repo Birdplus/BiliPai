@@ -1,5 +1,6 @@
 package com.android.purebilibili.feature.list
 
+import java.io.File
 import com.android.purebilibili.core.store.HomeHeaderBlurMode
 import com.android.purebilibili.core.store.HomeSettings
 import com.android.purebilibili.core.theme.AndroidNativeVariant
@@ -80,6 +81,16 @@ class CommonListAppearancePolicyTest {
     fun commonListViewportTopPadding_keepsScrollableContentBelowHeader() {
         assertEquals(148.dp, resolveCommonListViewportTopPadding(148.dp))
         assertEquals(0.dp, resolveCommonListViewportTopPadding((-12).dp))
+    }
+
+    @Test
+    fun commonListTopBar_usesHeaderBlurBudget() {
+        val source = listOf(
+            File("app/src/main/java/com/android/purebilibili/feature/list/CommonListScreen.kt"),
+            File("src/main/java/com/android/purebilibili/feature/list/CommonListScreen.kt")
+        ).first { it.exists() }.readText()
+
+        assertTrue(source.contains("surfaceType = BlurSurfaceType.HEADER"))
     }
 
     @Test
