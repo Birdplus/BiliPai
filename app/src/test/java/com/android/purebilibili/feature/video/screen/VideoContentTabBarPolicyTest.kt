@@ -142,6 +142,20 @@ class VideoContentTabBarPolicyTest {
         )
     }
 
+    @Test
+    fun `intro action row exposes a labeled comment entry and opens comment tab`() {
+        val contentSource = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/video/screen/VideoContentSection.kt"
+        )
+        val actionSource = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/video/ui/section/VideoActionSection.kt"
+        )
+
+        assertTrue(contentSource.contains("onCommentClick = { onTabSelected(1) }"))
+        assertTrue(actionSource.contains("text = \"评论 \${FormatUtils.formatStat(info.stat.reply.toLong())}\""))
+        assertTrue(actionSource.contains("onClick = onCommentClick"))
+    }
+
     private fun loadSource(path: String): String {
         val normalizedPath = path.removePrefix("app/")
         val sourceFile = listOf(

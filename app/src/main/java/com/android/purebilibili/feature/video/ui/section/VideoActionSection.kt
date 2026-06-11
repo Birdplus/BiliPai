@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.purebilibili.core.ui.AppIcons
+import com.android.purebilibili.core.ui.rememberAppCommentIcon
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.HapticType
 import com.android.purebilibili.core.util.rememberHapticFeedback
@@ -94,6 +95,7 @@ fun ActionButtonsRow(
     onWatchLaterClick: () -> Unit = {},  //  稍后再看点击
     onFavoriteLongClick: () -> Unit = {}, // [New] 长按收藏
     onShareClick: () -> Unit = {},
+    showCommentAction: Boolean = true,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -209,6 +211,23 @@ fun ActionButtonsRow(
                 progress = tripleProgress,
                 onClick = onCoinClick
             )
+        }
+
+        if (showCommentAction) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 56.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BiliActionButton(
+                    icon = rememberAppCommentIcon(),
+                    text = "评论 ${FormatUtils.formatStat(info.stat.reply.toLong())}",
+                    isActive = false,
+                    activeColor = activeColors.primaryAction,
+                    onClick = onCommentClick
+                )
+            }
         }
 
         // Favorite

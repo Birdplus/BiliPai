@@ -866,6 +866,7 @@ private fun ScrollableVideoInfoSection(
                 onWatchLaterClick = onWatchLaterClick,
                 downloadProgress = downloadProgress ?: -1f,
                 onCommentClick = { /* 平板模式不需要跳转评论 */ },
+                showCommentAction = false,
                 onShareClick = {
                     ShareUtils.shareVideo(
                         context,
