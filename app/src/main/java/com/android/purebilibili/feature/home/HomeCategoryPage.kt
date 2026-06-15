@@ -214,7 +214,7 @@ internal fun HomeCategoryPageContent(
             columns = GridCells.Fixed(gridColumns),
             contentPadding = contentPadding,
             horizontalArrangement = Arrangement.spacedBy(cardLayout.itemSpacingDp.dp),
-            verticalArrangement = Arrangement.spacedBy(cardLayout.itemSpacingDp.dp),
+            verticalArrangement = Arrangement.spacedBy(cardLayout.verticalItemSpacingDp.dp),
             modifier = Modifier.fillMaxSize()
         ) {
         if (category == HomeCategory.LIVE) {

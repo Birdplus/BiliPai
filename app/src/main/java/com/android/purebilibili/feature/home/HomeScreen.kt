@@ -1563,10 +1563,12 @@ fun HomeScreen(
                                      columns = GridCells.Fixed(gridColumns),
                                      contentPadding = PaddingValues(
                                          bottom = homeListBottomPadding,
-                                         start = 8.dp, end = 8.dp, top = listTopPadding // [Fix] Apply top padding to skeleton grid too
+                                         start = homeFeedCardLayout.outerPaddingDp.dp,
+                                         end = homeFeedCardLayout.outerPaddingDp.dp,
+                                         top = listTopPadding
                                      ),
-                                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                     verticalArrangement = Arrangement.spacedBy(10.dp),
+                                     horizontalArrangement = Arrangement.spacedBy(homeFeedCardLayout.itemSpacingDp.dp),
+                                     verticalArrangement = Arrangement.spacedBy(homeFeedCardLayout.verticalItemSpacingDp.dp),
                                      modifier = Modifier.fillMaxSize()
                                  ) {
                                      // [Fix] Dynamic skeleton count to fill tablet screens (at least 5 rows)
