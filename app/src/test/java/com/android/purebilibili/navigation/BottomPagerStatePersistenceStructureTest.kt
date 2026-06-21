@@ -15,6 +15,9 @@ class BottomPagerStatePersistenceStructureTest {
         assertTrue(source.contains("rememberPagerState("))
         assertTrue(source.contains("rememberMainBottomPagerState("))
         assertTrue(source.contains("HorizontalPager("))
+        assertTrue(source.contains("rememberSaveableStateHolder()"))
+        assertTrue(source.contains("SaveableStateProvider(resolveBottomPagerSaveableStateKey(item))"))
+        assertTrue(source.contains("var historyHasActivated by rememberSaveable"))
         assertTrue(source.contains("userScrollEnabled = shouldEnableBottomPagerUserScroll()"))
         assertTrue(source.contains("resolveBottomPagerRenderBudget(isNavigating = mainBottomPagerState.isNavigating)"))
         assertFalse(source.contains("pendingBottomTabTransitionRoute"))
@@ -24,11 +27,12 @@ class BottomPagerStatePersistenceStructureTest {
     }
 
     @Test
-    fun `main bottom pager keeps continuous scroll and tracks transition start page`() {
+    fun `main bottom pager delegates distant jumps to pager pre jump animation`() {
         val source = loadSource("app/src/main/java/com/android/purebilibili/navigation/MainBottomPagerState.kt")
 
         assertTrue(source.contains("navigationStartPage"))
-        assertTrue(source.contains("pagerState.animateScrollBy("))
+        assertTrue(source.contains("pagerState.animateScrollToPage("))
+        assertFalse(source.contains("pagerState.animateScrollBy("))
         assertFalse(source.contains("shouldUseDirectBottomPagerJump("))
     }
 

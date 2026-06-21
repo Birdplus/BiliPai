@@ -2,7 +2,6 @@ package com.android.purebilibili.navigation
 
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,34 +41,13 @@ internal class MainBottomPagerState(
         selectedPage = targetIndex
         isNavigating = true
 
-        val layoutInfo = pagerState.layoutInfo
-        val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
-        if (pageSize <= 0) {
-            navJob = coroutineScope.launch {
-                try {
-                    pagerState.scrollToPage(targetIndex)
-                } finally {
-                    isNavigating = false
-                    selectedPage = targetIndex
-                    navigationStartPage = targetIndex
-                }
-            }
-            return
-        }
-
-        val currentDistanceInPages =
-            targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
-        val scrollPixels = currentDistanceInPages * pageSize
-        val duration = resolveBottomPagerNavigationDurationMillis(
-            currentPage = pagerState.currentPage,
-            targetPage = targetIndex
-        )
+        val duration = resolveBottomPagerNavigationDurationMillis()
 
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                pagerState.animateScrollBy(
-                    value = scrollPixels,
+                pagerState.animateScrollToPage(
+                    page = targetIndex,
                     animationSpec = tween(easing = EaseInOut, durationMillis = duration)
                 )
             } finally {

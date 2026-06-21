@@ -27,6 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.luminance
@@ -439,6 +441,7 @@ fun AppNavigation(
         val bottomPagerState = rememberPagerState(
             pageCount = { visibleBottomBarItems.size.coerceAtLeast(1) }
         )
+        val bottomPagerSaveableStateHolder = rememberSaveableStateHolder()
         val mainBottomPagerState = rememberMainBottomPagerState(bottomPagerState)
         var bottomPagerContentReady by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) {
@@ -1141,18 +1144,13 @@ fun AppNavigation(
                             HorizontalPager(
                                 modifier = Modifier.fillMaxSize(),
                                 state = bottomPagerState,
-                                beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(
-                                    contentReady = bottomPagerContentReady,
-                                    isNavigating = mainBottomPagerState.isNavigating,
-                                    currentPage = bottomPagerState.currentPage,
-                                    selectedPage = mainBottomPagerState.selectedPage
-                                ),
+                                beyondViewportPageCount = resolveBottomPagerBeyondViewportPageCount(),
                                 userScrollEnabled = shouldEnableBottomPagerUserScroll()
                             ) { page ->
-                                val item = visibleBottomBarItems.getOrNull(page) ?: BottomNavItem.HOME
+                                val slotItem = visibleBottomBarItems.getOrNull(page) ?: BottomNavItem.HOME
                                 if (
                                     shouldComposeBottomPagerPage(
-                                        item = item,
+                                        item = slotItem,
                                         page = page,
                                         currentPage = bottomPagerState.currentPage,
                                         selectedPage = mainBottomPagerState.selectedPage,
@@ -1161,14 +1159,24 @@ fun AppNavigation(
                                         contentReady = bottomPagerContentReady
                                     )
                                 ) {
+                                    val renderPage = resolveBottomPagerRenderPage(
+                                        page = page,
+                                        currentPage = bottomPagerState.currentPage,
+                                        selectedPage = mainBottomPagerState.selectedPage,
+                                        navigationStartPage = mainBottomPagerState.navigationStartPage,
+                                        isNavigating = mainBottomPagerState.isNavigating
+                                    )
+                                    val item = visibleBottomBarItems.getOrNull(renderPage) ?: slotItem
                                     val pageKey = bottomPagerNavKeyForItem(item)
-                                    CompositionLocalProvider(
-                                        LocalVideoCardSharedElementSourceRoute provides pageKey.toLegacyRoute()
-                                    ) {
-                                        RenderNavigationContent(
-                                            key = pageKey,
-                                            isBottomPagerPageActive = page == bottomPagerState.settledPage
-                                        )
+                                    bottomPagerSaveableStateHolder.SaveableStateProvider(resolveBottomPagerSaveableStateKey(item)) {
+                                        CompositionLocalProvider(
+                                            LocalVideoCardSharedElementSourceRoute provides pageKey.toLegacyRoute()
+                                        ) {
+                                            RenderNavigationContent(
+                                                key = pageKey,
+                                                isBottomPagerPageActive = page == bottomPagerState.settledPage
+                                            )
+                                        }
                                     }
                                 } else {
                                     Box(modifier = Modifier.fillMaxSize())
@@ -1238,7 +1246,7 @@ fun AppNavigation(
                         BiliPaiNavEntryContentRole.HISTORY -> {
                                 val historyViewModel: HistoryViewModel = viewModel()
                                 val historyNavigationScope = rememberCoroutineScope()
-                                var historyHasActivated by remember(historyViewModel) {
+                                var historyHasActivated by rememberSaveable {
                                     mutableStateOf(false)
                                 }
                                 androidx.compose.runtime.LaunchedEffect(

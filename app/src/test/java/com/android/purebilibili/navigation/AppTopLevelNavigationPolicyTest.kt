@@ -446,77 +446,35 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
-    fun bottomPagerNavigationDuration_scalesWithNavigationDistance() {
-        assertEquals(
-            300,
-            resolveBottomPagerNavigationDurationMillis(
-                currentPage = 0,
-                targetPage = 1
-            )
-        )
-        assertEquals(
-            300,
-            resolveBottomPagerNavigationDurationMillis(
-                currentPage = 0,
-                targetPage = 2
-            )
-        )
-        assertEquals(
-            400,
-            resolveBottomPagerNavigationDurationMillis(
-                currentPage = 0,
-                targetPage = 3
-            )
-        )
-        assertEquals(
-            500,
-            resolveBottomPagerNavigationDurationMillis(
-                currentPage = 0,
-                targetPage = 4
-            )
-        )
+    fun bottomPagerNavigationDuration_isFixed() {
+        assertEquals(300, resolveBottomPagerNavigationDurationMillis())
     }
 
     @Test
-    fun bottomPagerPreload_staysOffUntilNavigation() {
-        assertEquals(
-            0,
-            resolveBottomPagerBeyondViewportPageCount(
-                contentReady = false,
-                isNavigating = false,
-                currentPage = 0,
-                selectedPage = 0
-            )
-        )
-        assertEquals(
-            0,
-            resolveBottomPagerBeyondViewportPageCount(
-                contentReady = true,
-                isNavigating = false,
-                currentPage = 0,
-                selectedPage = 0
-            )
-        )
+    fun bottomPagerPreload_isDisabled() {
+        assertEquals(0, resolveBottomPagerBeyondViewportPageCount())
     }
 
     @Test
-    fun bottomPagerPreload_expandsOnlyToNavigationDistance() {
+    fun bottomPagerPreJump_rendersStartPageInIntermediateSlot() {
         assertEquals(
-            3,
-            resolveBottomPagerBeyondViewportPageCount(
-                contentReady = true,
-                isNavigating = true,
-                currentPage = 0,
-                selectedPage = 3
+            0,
+            resolveBottomPagerRenderPage(
+                page = 3,
+                currentPage = 3,
+                selectedPage = 4,
+                navigationStartPage = 0,
+                isNavigating = true
             )
         )
         assertEquals(
-            1,
-            resolveBottomPagerBeyondViewportPageCount(
-                contentReady = true,
-                isNavigating = true,
-                currentPage = 2,
-                selectedPage = 3
+            4,
+            resolveBottomPagerRenderPage(
+                page = 4,
+                currentPage = 3,
+                selectedPage = 4,
+                navigationStartPage = 0,
+                isNavigating = true
             )
         )
     }

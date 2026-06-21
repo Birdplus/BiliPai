@@ -138,23 +138,22 @@ internal fun resolveBottomPagerSaveableStateKey(item: BottomNavItem): String {
     return "bottom:${item.route}"
 }
 
-internal fun resolveBottomPagerNavigationDurationMillis(
-    currentPage: Int,
-    targetPage: Int
-): Int {
-    val distance = kotlin.math.abs(targetPage - currentPage).coerceAtLeast(2)
-    return 100 * distance + 100
-}
+internal fun resolveBottomPagerNavigationDurationMillis(): Int = 300
 
-internal fun resolveBottomPagerBeyondViewportPageCount(
-    contentReady: Boolean,
-    isNavigating: Boolean,
+internal fun resolveBottomPagerBeyondViewportPageCount(): Int = 0
+
+internal fun resolveBottomPagerRenderPage(
+    page: Int,
     currentPage: Int,
-    selectedPage: Int
+    selectedPage: Int,
+    navigationStartPage: Int,
+    isNavigating: Boolean
 ): Int {
-    if (!contentReady) return 0
-    if (!isNavigating) return 0
-    return kotlin.math.abs(selectedPage - currentPage)
+    val isPreJumpPage = isNavigating &&
+        page == currentPage &&
+        page != navigationStartPage &&
+        page != selectedPage
+    return if (isPreJumpPage) navigationStartPage else page
 }
 
 internal fun resolveBottomPagerRenderBudget(isNavigating: Boolean): BottomPagerRenderBudget {
