@@ -29,8 +29,6 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -447,6 +445,7 @@ private fun SearchKeywordSectionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -454,7 +453,9 @@ private fun SearchKeywordSectionHeader(
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 20.sp
-                )
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (showTrendingAction && enabled && onOpenTrending != null) {
                 TextButton(onClick = onOpenTrending) {
@@ -477,24 +478,22 @@ private fun SearchKeywordSectionHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (enabled) {
-                TextButton(onClick = onRefresh) {
+                IconButton(onClick = onRefresh, modifier = Modifier.size(40.dp)) {
                     Icon(
                         imageVector = Icons.Rounded.Refresh,
-                        contentDescription = null,
+                        contentDescription = "刷新搜索发现",
                         tint = MaterialTheme.colorScheme.secondary
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "刷新",
-                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
             if (onToggleEnabled != null) {
-                AssistChip(
-                    onClick = onToggleEnabled,
-                    label = { Text(resolveSearchKeywordSectionToggleLabel(enabled)) }
-                )
+                IconButton(onClick = onToggleEnabled, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = if (enabled) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        contentDescription = if (enabled) "隐藏搜索发现" else "显示搜索发现",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
