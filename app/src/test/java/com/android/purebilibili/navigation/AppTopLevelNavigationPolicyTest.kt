@@ -446,8 +446,10 @@ class AppTopLevelNavigationPolicyTest {
     }
 
     @Test
-    fun bottomPagerNavigationDuration_isFixed() {
-        assertEquals(300, resolveBottomPagerNavigationDurationMillis())
+    fun bottomPagerNavigationDuration_scalesWithPageDistance() {
+        assertEquals(300, resolveBottomPagerNavigationDurationMillis(pageDistance = 1))
+        assertEquals(380, resolveBottomPagerNavigationDurationMillis(pageDistance = 2))
+        assertEquals(540, resolveBottomPagerNavigationDurationMillis(pageDistance = 4))
     }
 
     @Test

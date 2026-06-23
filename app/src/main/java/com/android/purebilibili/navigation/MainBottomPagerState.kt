@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 internal class MainBottomPagerState(
     val pagerState: PagerState,
@@ -49,7 +50,9 @@ internal class MainBottomPagerState(
         val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
         val scrollPixels =
             (targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction) * pageSize
-        val duration = resolveBottomPagerNavigationDurationMillis()
+        val duration = resolveBottomPagerNavigationDurationMillis(
+            pageDistance = abs(targetIndex - pagerState.currentPage)
+        )
 
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job

@@ -138,7 +138,10 @@ internal fun resolveBottomPagerSaveableStateKey(item: BottomNavItem): String {
     return "bottom:${item.route}"
 }
 
-internal fun resolveBottomPagerNavigationDurationMillis(): Int = 300
+internal fun resolveBottomPagerNavigationDurationMillis(pageDistance: Int): Int {
+    val distance = pageDistance.coerceAtLeast(1)
+    return 220 + distance * 80
+}
 
 internal fun resolveBottomPagerBeyondViewportPageCount(): Int = 0
 
