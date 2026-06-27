@@ -1247,7 +1247,8 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
             fetchedReplyCount = items.size,
             loadedReplyCount = items.size,
             remoteReplyCount = totalCount,
-            requestedPage = 1
+            requestedPage = 1,
+            restPage = data.page
         )
         _subReplyState.value = SubReplyUiState(
             visible = true,
@@ -1260,8 +1261,6 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
             basePage = 1,
             isEnd = isEnd,
             baseIsEnd = isEnd,
-            grpcNextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() },
-            baseGrpcNextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() },
             targetReplyId = targetReplyId.takeIf { it != rootReplyId } ?: 0L
         )
     }
@@ -1324,7 +1323,8 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
                     fetchedReplyCount = newItems.size,
                     loadedReplyCount = updatedItems.size,
                     remoteReplyCount = totalCount,
-                    requestedPage = page
+                    requestedPage = page,
+                    restPage = data.page
                 )
                 _subReplyState.value = resolveDynamicSubReplyStateAfterSuccess(
                     currentState = current,
@@ -1332,7 +1332,7 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
                     page = page,
                     isEnd = isEnd,
                     totalCount = totalCount,
-                    grpcNextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }
+                    grpcNextOffset = null
                 )
             }.onFailure { error ->
                 _subReplyState.value = resolveDynamicSubReplyStateAfterFailure(

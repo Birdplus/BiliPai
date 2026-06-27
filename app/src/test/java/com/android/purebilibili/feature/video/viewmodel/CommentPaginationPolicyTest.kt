@@ -123,6 +123,38 @@ class CommentPaginationPolicyTest {
     }
 
     @Test
+    fun `sub reply page should continue when rest page metadata has more pages`() {
+        assertFalse(
+            resolveSubReplyPageEnd(
+                cursorIsEnd = true,
+                fetchedReplyCount = 20,
+                loadedReplyCount = 20,
+                remoteReplyCount = 20,
+                requestedPage = 1,
+                restPage = com.android.purebilibili.data.model.response.ReplyPage(
+                    num = 1,
+                    size = 20,
+                    count = 200
+                )
+            )
+        )
+        assertTrue(
+            resolveSubReplyPageEnd(
+                cursorIsEnd = false,
+                fetchedReplyCount = 20,
+                loadedReplyCount = 200,
+                remoteReplyCount = 200,
+                requestedPage = 10,
+                restPage = com.android.purebilibili.data.model.response.ReplyPage(
+                    num = 10,
+                    size = 20,
+                    count = 200
+                )
+            )
+        )
+    }
+
+    @Test
     fun `sub reply page should end when loaded count reaches declared total`() {
         assertTrue(
             resolveSubReplyPageEnd(

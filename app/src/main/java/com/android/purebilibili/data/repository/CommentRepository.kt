@@ -394,7 +394,7 @@ object CommentRepository {
         page: Int,
         ps: Int = 20,
         paginationOffset: String? = null,
-        preferRestPaging: Boolean = false
+        preferRestPaging: Boolean = true
     ): Result<ReplyData> = withContext(Dispatchers.IO) {
         try {
             // 确保 buvid3 已初始化

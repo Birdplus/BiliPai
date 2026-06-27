@@ -166,8 +166,17 @@ internal fun resolveSubReplyDetailRevealSpec(
     )
 }
 
-internal fun resolveSubReplyDetailSectionTitle(replyCount: Int): String {
-    return "相关回复共${replyCount.coerceAtLeast(0)}条"
+internal fun resolveSubReplyDetailSectionTitle(
+    replyCount: Int,
+    loadedReplyCount: Int = replyCount
+): String {
+    val total = replyCount.coerceAtLeast(0)
+    val loaded = loadedReplyCount.coerceAtLeast(0)
+    return if (total > loaded) {
+        "相关回复共${total}条（已加载${loaded}条）"
+    } else {
+        "相关回复共${total}条"
+    }
 }
 
 internal fun resolveSubReplyDetailDisplayCount(
@@ -553,7 +562,10 @@ internal fun SubReplyDetailContent(
                                 text = if (effectiveConversationMode) {
                                     resolveSubReplyConversationSectionTitle(replyCount = visibleReplies.size)
                                 } else {
-                                    resolveSubReplyDetailSectionTitle(replyCount = detailReplyDisplayCount)
+                                    resolveSubReplyDetailSectionTitle(
+                                        replyCount = detailReplyDisplayCount,
+                                        loadedReplyCount = visibleReplies.size
+                                    )
                                 },
                                 fontSize = 14.sp,
                                 color = appearance.primaryTextColor,

@@ -19,12 +19,12 @@ class DynamicCommentStructureTest {
     }
 
     @Test
-    fun `dynamic sub replies continue with grpc pagination offset`() {
+    fun `dynamic sub replies use rest pn paging for detail list`() {
         val source = File("src/main/java/com/android/purebilibili/feature/dynamic/DynamicViewModel.kt")
             .readText()
 
         assertTrue(source.contains("paginationOffset = state.grpcNextOffset"))
-        assertTrue(source.contains("grpcNextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }"))
-        assertTrue(source.contains("baseGrpcNextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }"))
+        assertTrue(source.contains("restPage = data.page"))
+        assertTrue(source.contains("grpcNextOffset = null"))
     }
 }

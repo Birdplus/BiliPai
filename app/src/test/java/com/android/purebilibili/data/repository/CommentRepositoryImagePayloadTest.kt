@@ -64,7 +64,7 @@ class CommentRepositoryImagePayloadTest {
     fun `sub reply detail list keeps rest page size pagination available`() {
         val source = File("src/main/java/com/android/purebilibili/data/repository/CommentRepository.kt").readText()
 
-        assertTrue(source.contains("preferRestPaging: Boolean = false"))
+        assertTrue(source.contains("preferRestPaging: Boolean = true"))
         assertTrue(source.contains("useRestSubReplyPaging"))
         assertTrue(source.contains("if (!useRestSubReplyPaging && shouldTryGrpcPagedRequest"))
     }

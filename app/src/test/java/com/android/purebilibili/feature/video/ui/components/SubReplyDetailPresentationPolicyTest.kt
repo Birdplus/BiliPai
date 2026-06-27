@@ -23,6 +23,10 @@ class SubReplyDetailPresentationPolicyTest {
     @Test
     fun `section title should include current reply count`() {
         assertEquals("相关回复共14条", resolveSubReplyDetailSectionTitle(replyCount = 14))
+        assertEquals(
+            "相关回复共200条（已加载40条）",
+            resolveSubReplyDetailSectionTitle(replyCount = 200, loadedReplyCount = 40)
+        )
     }
 
     @Test

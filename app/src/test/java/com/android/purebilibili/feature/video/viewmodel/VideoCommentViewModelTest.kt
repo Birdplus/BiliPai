@@ -96,13 +96,15 @@ class VideoCommentViewModelTest {
     }
 
     @Test
-    fun `sub reply loading should not force rest pagination`() {
-        val source = File("src/main/java/com/android/purebilibili/feature/video/viewmodel/VideoCommentViewModel.kt")
+    fun `sub reply loading uses rest pn paging and clears grpc offset`() {
+        val viewModelSource = File("src/main/java/com/android/purebilibili/feature/video/viewmodel/VideoCommentViewModel.kt")
+            .readText()
+        val repositorySource = File("src/main/java/com/android/purebilibili/data/repository/CommentRepository.kt")
             .readText()
 
-        assertFalse(source.contains("loadSubReplies(requestSubject, rootReply.rpid, 1, paginationOffset = null)"))
-        assertFalse(source.contains("preferRestPaging = true"))
-        assertTrue(source.contains("paginationOffset = paginationOffset"))
-        assertTrue(source.contains("baseGrpcNextOffset = nextOffset"))
+        assertFalse(viewModelSource.contains("loadSubReplies(requestSubject, rootReply.rpid, 1, paginationOffset = null)"))
+        assertTrue(viewModelSource.contains("paginationOffset = paginationOffset"))
+        assertTrue(viewModelSource.contains("grpcNextOffset = null"))
+        assertTrue(repositorySource.contains("preferRestPaging: Boolean = true"))
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.purebilibili.data.model.CommentFraudStatus
 import com.android.purebilibili.data.model.response.ReplyData
 import com.android.purebilibili.data.model.response.ReplyItem
+import com.android.purebilibili.data.model.response.ReplyPage
 import com.android.purebilibili.data.repository.CommentRepository
 import com.android.purebilibili.data.repository.shouldStartCommentFraudDetection
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -181,17 +182,26 @@ internal fun resolveSubReplyPageEnd(
     loadedReplyCount: Int,
     remoteReplyCount: Int,
     requestedPage: Int = 1,
-    pageSize: Int = SUB_REPLY_PAGE_SIZE
+    pageSize: Int = SUB_REPLY_PAGE_SIZE,
+    restPage: ReplyPage = ReplyPage()
 ): Boolean {
     val safeLoadedCount = loadedReplyCount.coerceAtLeast(0)
-    if (remoteReplyCount > 0 && safeLoadedCount >= remoteReplyCount) {
+    val declaredTotal = restPage.count.takeIf { it > 0 } ?: remoteReplyCount
+    if (declaredTotal > 0 && safeLoadedCount >= declaredTotal) {
         return true
     }
-    if (remoteReplyCount > safeLoadedCount) {
+    // x/v2/reply/reply: page.num / page.size / page.count 表示 REST 分页进度。
+    if (restPage.count > 0 && restPage.num > 0 && restPage.size > 0) {
+        if (restPage.num * restPage.size < restPage.count) {
+            return false
+        }
+        return fetchedReplyCount <= 0 || safeLoadedCount >= restPage.count
+    }
+    if (declaredTotal > safeLoadedCount) {
         // 楼中楼接口可能因审核或折叠导致中间页很稀疏，不能因单页为空提前结束。
         // 最多探测到外层声明总数对应的理论末页，避免异常计数导致无限请求。
         val safePageSize = pageSize.coerceAtLeast(1)
-        val expectedLastPage = (remoteReplyCount + safePageSize - 1) / safePageSize
+        val expectedLastPage = (declaredTotal + safePageSize - 1) / safePageSize
         return requestedPage.coerceAtLeast(1) >= expectedLastPage
     }
     return cursorIsEnd || fetchedReplyCount <= 0
@@ -522,9 +532,9 @@ class VideoCommentViewModel : ViewModel() {
                     fetchedReplyCount = items.size,
                     loadedReplyCount = items.size,
                     remoteReplyCount = totalCount,
-                    requestedPage = 1
+                    requestedPage = 1,
+                    restPage = data.page
                 )
-                val nextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }
                 _subReplyState.value = SubReplyUiState(
                     visible = true,
                     rootReply = rootReply,
@@ -537,8 +547,6 @@ class VideoCommentViewModel : ViewModel() {
                     isEnd = isEnd,
                     baseIsEnd = isEnd,
                     upMid = _commentState.value.upMid,
-                    grpcNextOffset = nextOffset,
-                    baseGrpcNextOffset = nextOffset,
                     targetReplyId = targetReplyId.takeIf { it != rootReplyId } ?: 0L
                 )
             }.onFailure { error ->
@@ -738,7 +746,6 @@ class VideoCommentViewModel : ViewModel() {
                 }
                 val newItems = data.replies ?: emptyList()
                 val updatedItems = if (page == 1) newItems else (current.items + newItems).distinctBy { it.rpid }
-                val nextOffset = data.grpcNextOffset.takeIf { it.isNotBlank() }
                 val remoteTotalCount = resolveSubReplyRemoteTotalCount(
                     data = data,
                     rootReply = current.rootReply
@@ -754,7 +761,8 @@ class VideoCommentViewModel : ViewModel() {
                     fetchedReplyCount = newItems.size,
                     loadedReplyCount = updatedItems.size,
                     remoteReplyCount = totalCount,
-                    requestedPage = page
+                    requestedPage = page,
+                    restPage = data.page
                 )
 
                 _subReplyState.value = current.copy(
@@ -767,8 +775,8 @@ class VideoCommentViewModel : ViewModel() {
                     isEnd = isEnd,
                     baseIsEnd = isEnd,
                     error = null,
-                    grpcNextOffset = nextOffset,
-                    baseGrpcNextOffset = nextOffset
+                    grpcNextOffset = null,
+                    baseGrpcNextOffset = null
                 )
             }.onFailure {
                 val current = _subReplyState.value
