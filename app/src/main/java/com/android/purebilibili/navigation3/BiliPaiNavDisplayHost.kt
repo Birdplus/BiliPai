@@ -65,11 +65,17 @@ internal fun BiliPaiNavDisplayHost(
             toKey = safeBackStack.getOrNull(safeBackStack.lastIndex - 1)
         )
     }
-    val predictiveBackExitDirection = remember(sourceMetadata.cardSourceDirection) {
-        when (sourceMetadata.cardSourceDirection) {
-            BiliPaiNavCardSourceDirection.SOURCE_LEFT -> BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT
-            BiliPaiNavCardSourceDirection.SOURCE_RIGHT -> BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT
-            BiliPaiNavCardSourceDirection.NONE -> BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE
+    val predictiveBackExitDirection = remember(popRouteTransition, sourceMetadata.cardSourceDirection) {
+        if (popRouteTransition == BiliPaiNavRouteTransition.NO_OP_SHARED_ELEMENT) {
+            // 共享元素过渡：跟随手势方向。共享元素动画自身已通过 start/end bounds
+            // 驱动视觉位移方向，页面滑动如果硬编码为与手势相反的方向会产生视觉冲突。
+            BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE
+        } else {
+            when (sourceMetadata.cardSourceDirection) {
+                BiliPaiNavCardSourceDirection.SOURCE_LEFT -> BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT
+                BiliPaiNavCardSourceDirection.SOURCE_RIGHT -> BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT
+                BiliPaiNavCardSourceDirection.NONE -> BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE
+            }
         }
     }
     val predictiveBackHandler: BiliPaiPredictiveBackAnimationHandler = remember(

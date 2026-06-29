@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -14,10 +13,11 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.defaultTransitionSpec
 
 import androidx.navigationevent.NavigationEventTransitionState
+import com.android.purebilibili.core.ui.motion.AppMotionEasing
 import com.android.purebilibili.navigation3.BiliPaiNavKey
 
 internal class BiliPaiSharedElementPredictiveBackAnimation(
-    private val exitDirection: BiliPaiPredictiveBackExitDirection = BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT,
+    private val exitDirection: BiliPaiPredictiveBackExitDirection = BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE,
 ) : BiliPaiPredictiveBackAnimationHandler {
     override suspend fun onBackPressed(
         transitionState: NavigationEventTransitionState?,
@@ -36,19 +36,43 @@ internal class BiliPaiSharedElementPredictiveBackAnimation(
     ): ContentTransform {
         val slideOut = when (exitDirection) {
             BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE -> {
-                if (swipeEdge == 0) slideOutHorizontally(targetOffsetX = { it })
-                else slideOutHorizontally(targetOffsetX = { -it })
+                if (swipeEdge == 0) slideOutHorizontally(
+                    animationSpec = tween(220, easing = AppMotionEasing.EmphasizedExit),
+                    targetOffsetX = { it },
+                )
+                else slideOutHorizontally(
+                    animationSpec = tween(220, easing = AppMotionEasing.EmphasizedExit),
+                    targetOffsetX = { -it },
+                )
             }
-            BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT -> slideOutHorizontally(targetOffsetX = { it })
-            BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT -> slideOutHorizontally(targetOffsetX = { -it })
+            BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT -> slideOutHorizontally(
+                animationSpec = tween(220, easing = AppMotionEasing.EmphasizedExit),
+                targetOffsetX = { it },
+            )
+            BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT -> slideOutHorizontally(
+                animationSpec = tween(220, easing = AppMotionEasing.EmphasizedExit),
+                targetOffsetX = { -it },
+            )
         }
         val slideIn = when (exitDirection) {
             BiliPaiPredictiveBackExitDirection.FOLLOW_GESTURE -> {
-                if (swipeEdge == 0) slideInHorizontally(initialOffsetX = { -it / 4 })
-                else slideInHorizontally(initialOffsetX = { it / 4 })
+                if (swipeEdge == 0) slideInHorizontally(
+                    animationSpec = tween(220, easing = AppMotionEasing.EmphasizedEnter),
+                    initialOffsetX = { -it / 4 },
+                )
+                else slideInHorizontally(
+                    animationSpec = tween(220, easing = AppMotionEasing.EmphasizedEnter),
+                    initialOffsetX = { it / 4 },
+                )
             }
-            BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT -> slideInHorizontally(initialOffsetX = { -it / 4 })
-            BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT -> slideInHorizontally(initialOffsetX = { it / 4 })
+            BiliPaiPredictiveBackExitDirection.ALWAYS_RIGHT -> slideInHorizontally(
+                animationSpec = tween(220, easing = AppMotionEasing.EmphasizedEnter),
+                initialOffsetX = { -it / 4 },
+            )
+            BiliPaiPredictiveBackExitDirection.ALWAYS_LEFT -> slideInHorizontally(
+                animationSpec = tween(220, easing = AppMotionEasing.EmphasizedEnter),
+                initialOffsetX = { it / 4 },
+            )
         }
         return ContentTransform(
             targetContentEnter = slideIn,
