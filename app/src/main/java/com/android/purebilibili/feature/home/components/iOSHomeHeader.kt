@@ -228,6 +228,17 @@ internal fun resolveHomeTopChromeLiquidGlassEnabled(
     return resolvedHomeSettings.isTopBarLiquidGlassEnabled
 }
 
+internal fun resolveHomeTopTabIndicatorLiquidGlassEnabled(
+    homeSettings: HomeSettings?,
+    uiPreset: UiPreset
+): Boolean {
+    val resolvedHomeSettings = homeSettings ?: HomeSettings()
+    if (resolveHomeTopChromeLiquidGlassEnabled(resolvedHomeSettings, uiPreset)) {
+        return true
+    }
+    return uiPreset == UiPreset.MD3 && resolvedHomeSettings.androidNativeLiquidGlassEnabled
+}
+
 internal fun resolveHomeTopSearchLiquidGlassEnabled(
     homeSettings: HomeSettings?,
     uiPreset: UiPreset
@@ -2203,9 +2214,10 @@ fun iOSHomeHeader(
                 pagerState = pagerState,
                 labelMode = homeSettings?.topTabLabelMode
                     ?: com.android.purebilibili.core.store.SettingsManager.TopTabLabelMode.TEXT_ONLY,
-                isLiquidGlassEnabled =
-                    effectiveTabMaterialMode == TopTabMaterialMode.LIQUID_GLASS &&
-                        isGlassSupported,
+                isLiquidGlassEnabled = resolveHomeTopTabIndicatorLiquidGlassEnabled(
+                    homeSettings = homeSettings,
+                    uiPreset = uiPreset
+                ) && isGlassSupported,
                 liquidGlassStyle = liquidStyle,
                 liquidGlassTuning = liquidGlassTuning,
                 hazeState = hazeState,

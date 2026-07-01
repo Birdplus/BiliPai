@@ -915,6 +915,37 @@ class iOSHomeHeaderVisualPolicyTest {
     }
 
     @Test
+    fun `android native global liquid glass enables top tab capsule indicator`() {
+        assertTrue(
+            resolveHomeTopTabIndicatorLiquidGlassEnabled(
+                homeSettings = HomeSettings(
+                    isTopBarLiquidGlassEnabled = false,
+                    androidNativeLiquidGlassEnabled = true
+                ),
+                uiPreset = UiPreset.MD3
+            )
+        )
+        assertFalse(
+            resolveHomeTopTabIndicatorLiquidGlassEnabled(
+                homeSettings = HomeSettings(
+                    isTopBarLiquidGlassEnabled = false,
+                    androidNativeLiquidGlassEnabled = false
+                ),
+                uiPreset = UiPreset.MD3
+            )
+        )
+        assertTrue(
+            resolveHomeTopTabIndicatorLiquidGlassEnabled(
+                homeSettings = HomeSettings(
+                    isTopBarLiquidGlassEnabled = true,
+                    androidNativeLiquidGlassEnabled = false
+                ),
+                uiPreset = UiPreset.MD3
+            )
+        )
+    }
+
+    @Test
     fun `top chrome follows independent top dock liquid glass setting`() {
         assertTrue(
             resolveHomeTopChromeLiquidGlassEnabled(

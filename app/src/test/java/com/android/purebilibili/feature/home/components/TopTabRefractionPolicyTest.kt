@@ -24,12 +24,14 @@ class TopTabRefractionPolicyTest {
         assertTrue(source.contains("topTabShouldStretchIndicator"))
         assertTrue(source.contains("val shouldPrimeTopTabLiquidGlassCapture ="))
         assertTrue(source.contains("val topTabContentBackdrop = rememberLayerBackdrop()"))
-        assertTrue(source.contains("val topTabIndicatorContentBackdrop = topTabContentBackdrop"))
-        assertFalse(source.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)"))
+        assertTrue(source.contains("val effectiveTopTabIndicatorContentBackdrop: Backdrop?"))
+        assertTrue(source.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)"))
         assertTrue(source.contains("contentBackdrop = effectiveTopTabIndicatorContentBackdrop"))
-        assertTrue(source.contains("backdrop = null"))
+        assertTrue(source.contains("backdrop = backdrop"))
+        assertTrue(source.contains("val glassLayersAlwaysOn = shouldUseLiquidGlassIndicator"))
+        assertTrue(source.contains("resolveTopTabIndicatorBackdropPolicy("))
         assertTrue(source.contains("indicatorLayerScaleTransform = if (topTabDragActive)"))
-        assertTrue(source.contains("indicatorHeight = 4.dp"))
+        assertFalse(source.contains("indicatorHeight = 4.dp"))
     }
 
     @Test
@@ -367,7 +369,7 @@ class TopTabRefractionPolicyTest {
         assertFalse(source.contains("drawBackdrop("))
         assertFalse(source.contains(".layerBackdrop(tabsBackdrop)"))
         assertFalse(source.contains("rememberCombinedBackdrop(backdrop, tabsBackdrop)"))
-        assertFalse(source.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)"))
+        assertTrue(source.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)"))
         assertTrue(source.contains("if (shouldPrimeTopTabLiquidGlassCapture)"))
         assertTrue(source.contains("layerBackdrop(topTabContentBackdrop)"))
     }

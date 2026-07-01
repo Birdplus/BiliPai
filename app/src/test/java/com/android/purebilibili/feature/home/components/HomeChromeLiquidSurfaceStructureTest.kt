@@ -175,13 +175,15 @@ class HomeChromeLiquidSurfaceStructureTest {
                 topBarSource.contains("KernelSuBottomBarIndicatorLayer(") &&
                 topBarSource.contains("val shouldPrimeTopTabLiquidGlassCapture =") &&
                 topBarSource.contains("val topTabContentBackdrop = rememberLayerBackdrop()") &&
-                topBarSource.contains("val topTabIndicatorContentBackdrop = topTabContentBackdrop") &&
-                !topBarSource.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)") &&
+                topBarSource.contains("rememberCombinedBackdrop(backdrop, topTabContentBackdrop)") &&
                 topBarSource.contains("layerBackdrop(topTabContentBackdrop)") &&
                 topBarSource.contains("shouldRenderBottomBarIndicatorBackdrop(") &&
+                topBarSource.contains("val glassLayersAlwaysOn = shouldUseLiquidGlassIndicator") &&
+                topBarSource.contains("resolveTopTabIndicatorBackdropPolicy(") &&
                 topBarSource.contains("allowIdleGlassEffect = false") &&
                 topBarSource.contains("contentBackdrop = effectiveTopTabIndicatorContentBackdrop") &&
-                topBarSource.contains("else if (!shouldUseMd3DockBackedCapsule)")
+                topBarSource.contains("backdrop = backdrop") &&
+                topBarSource.contains("!shouldUseMd3DockBackedCapsule && !shouldUseMd3LiquidCapsule")
         )
         assertFalse(
             "top tab row should not keep the old bottom-bar local backdrop capture names",
