@@ -2,12 +2,10 @@ package com.android.purebilibili.navigation3.predictiveback
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,7 +14,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,13 +24,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.scene.Scene
-import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.defaultTransitionSpec
 
 import androidx.navigationevent.NavigationEvent.Companion.EDGE_LEFT
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
-import com.android.purebilibili.core.ui.util.rememberDeviceCornerRadius
+import com.android.purebilibili.core.ui.util.rememberDeviceCornerShape
 import com.android.purebilibili.navigation3.BiliPaiNavKey
 import kotlinx.coroutines.CoroutineScope
 
@@ -76,37 +72,13 @@ internal class BiliPaiScalePredictiveBackAnimation(
         currentPageKey: BiliPaiNavKey?,
     ): Modifier {
         val windowInfo = LocalWindowInfo.current
-        val navContent = LocalNavAnimatedContentScope.current
         val containerHeightPx = windowInfo.containerSize.height
         val containerWidthPx = windowInfo.containerSize.width.toFloat()
         val pageKey = contentPageKey.toString()
-        val transition = navContent.transition
-        val deviceCornerRadius = rememberDeviceCornerRadius()
+        val deviceCornerShape = rememberDeviceCornerShape()
 
         return if (pageKey == currentPageKey.toString() || exitingPageKey.value == pageKey) {
-            val animatedScale by transition.animateFloat(
-                transitionSpec = { tween(300) },
-                label = "PredictiveScale",
-            ) { state ->
-                when (state) {
-                    EnterExitState.PostExit -> 0.85f
-                    else -> 1f
-                }
-            }
-
-            // 关键：之前在 composition body 里直接 `inPredictiveBackAnimation = animatedScale != 1f`
-            // 会在 PostExit 取消防越界起始的每一帧来回 back-write，整个 leaf screen 的 modifier
-            // 链（及下游 entry）随值抖动一并 invalidate 一次 composition。改为延迟到本帧
-            // Composition 完成后（SideEffect）再写，写动作不再影响正在进行的 Composition
-            // 的 ReadBack 分支；读取侧也只看当前的稳定布尔值，下一帧才检视。
-            //
-            // 注意：SideEffect 在 Composition 完成之后写入，
-            // 因此 inPredictiveBackAnimation 始终滞后一个帧。
-            // onBackPressed 的 guard（inPredictiveBackAnimation && …）
-            // 在读到此标志前一定会错过极快手势的第一帧。
-            // 这是有意为之：在 composition body 内直接写入标志
-            // 会导致 PostExit 每帧下游整片失效，造成卡顿。
-            val isCurrentlyPredictive = animatedScale != 1f
+            val isCurrentlyPredictive = transitionState is InProgress || exitingPageKey.value != null
             SideEffect {
                 inPredictiveBackAnimation = isCurrentlyPredictive
             }
@@ -132,13 +104,11 @@ internal class BiliPaiScalePredictiveBackAnimation(
 
             this
                 .graphicsLayer {
-                    scaleX = animatedScale
-                    scaleY = animatedScale
                     translationX = animatedTranslationX
                     transformOrigin = TransformOrigin(currentPivotX, currentPivotY)
                 }
                 .clip(
-                    if (needsClip) RoundedCornerShape(deviceCornerRadius)
+                    if (needsClip) deviceCornerShape
                     else RoundedCornerShape(0.dp),
                 )
         } else if (transitionState is InProgress) {

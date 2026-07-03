@@ -51,7 +51,10 @@ internal fun resolveVideoCardTransitionBackgroundFrame(
 ): VideoCardTransitionBackgroundFrame {
     val clamped = progress.coerceIn(0f, 1f)
     val blurStrength = resolveVideoCardTransitionBlurStrength(clamped)
-    val rawBlurRadiusPx = if (sdkInt >= Build.VERSION_CODES.S) {
+    val rawBlurRadiusPx = if (
+        phase != VideoCardTransitionBackgroundPhase.IDLE &&
+        sdkInt >= Build.VERSION_CODES.S
+    ) {
         VIDEO_CARD_TRANSITION_MAX_BLUR_RADIUS_PX * blurStrength
     } else {
         0f

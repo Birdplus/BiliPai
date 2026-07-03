@@ -60,6 +60,15 @@ class BiliPaiPredictiveBackAnimationPolicyTest {
     }
 
     @Test
+    fun scalePredictiveBack_keepsBackgroundSceneAtFullScale() {
+        val source = scalePredictiveBackSource()
+
+        assertFalse(source.contains("EnterExitState.PostExit -> 0.85f"))
+        assertFalse(source.contains("scaleX = animatedScale"))
+        assertFalse(source.contains("scaleY = animatedScale"))
+    }
+
+    @Test
     fun classicCardRoute_aospStyle_usesAospHandler() {
         val handler = resolveBiliPaiPredictiveBackAnimationHandler(
             routeTransition = BiliPaiNavRouteTransition.CLASSIC_CARD,
@@ -114,6 +123,13 @@ class BiliPaiPredictiveBackAnimationPolicyTest {
         return listOf(
             File("app/src/main/java/com/android/purebilibili/navigation3/predictiveback/BiliPaiSharedElementPredictiveBackAnimation.kt"),
             File("src/main/java/com/android/purebilibili/navigation3/predictiveback/BiliPaiSharedElementPredictiveBackAnimation.kt")
+        ).first { it.exists() }.readText()
+    }
+
+    private fun scalePredictiveBackSource(): String {
+        return listOf(
+            File("app/src/main/java/com/android/purebilibili/navigation3/predictiveback/BiliPaiScalePredictiveBackAnimation.kt"),
+            File("src/main/java/com/android/purebilibili/navigation3/predictiveback/BiliPaiScalePredictiveBackAnimation.kt")
         ).first { it.exists() }.readText()
     }
 }

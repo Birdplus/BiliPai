@@ -32,7 +32,7 @@ import androidx.navigation3.ui.defaultTransitionSpec
 import androidx.navigationevent.NavigationEvent.Companion.EDGE_LEFT
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
-import com.android.purebilibili.core.ui.util.rememberDeviceCornerRadius
+import com.android.purebilibili.core.ui.util.rememberDeviceCornerShape
 import com.android.purebilibili.navigation3.BiliPaiNavKey
 import kotlinx.coroutines.CoroutineScope
 
@@ -76,7 +76,7 @@ internal class BiliPaiAospCrossActivityPredictiveBackAnimation(
         val transition = navContent.transition
         val containerHeightPx = windowInfo.containerSize.height
         val pageKey = contentPageKey.toString()
-        val deviceCornerRadius = rememberDeviceCornerRadius()
+        val deviceCornerShape = rememberDeviceCornerShape()
         val enteringStartOffsetPx = with(LocalDensity.current) { 96.dp.toPx() }
         val linearProgress = exitAnimatable.value
         val emphasizedProgress = CubicBezierEasing(0.2f, 0f, 0f, 1f).transform(linearProgress)
@@ -159,13 +159,9 @@ internal class BiliPaiAospCrossActivityPredictiveBackAnimation(
                     else -> {
                         val initialTranslationX = -enteringStartOffsetPx * directionMultiplier
                         if (exitingPageKey.value != null) {
-                            scaleX = dragScale + (1f - dragScale) * emphasizedProgress
-                            scaleY = dragScale + (1f - dragScale) * emphasizedProgress
                             translationX = initialTranslationX * (1f - emphasizedProgress)
                             alpha = 1f
                         } else if (transitionState is InProgress) {
-                            scaleX = dragScale
-                            scaleY = dragScale
                             translationX = initialTranslationX
                             alpha = 1f
                         }
@@ -173,7 +169,7 @@ internal class BiliPaiAospCrossActivityPredictiveBackAnimation(
                 }
             }
             .clip(
-                if (needsClip) RoundedCornerShape(deviceCornerRadius)
+                if (needsClip) deviceCornerShape
                 else RoundedCornerShape(0.dp),
             )
     }

@@ -50,6 +50,19 @@ class VideoCardTransitionBackgroundPolicyTest {
     }
 
     @Test
+    fun settledFrameKeepsBackgroundStillAfterOpeningCompletes() {
+        val frame = resolveVideoCardTransitionBackgroundFrame(
+            progress = 1f,
+            phase = VideoCardTransitionBackgroundPhase.IDLE,
+            sdkInt = 35
+        )
+
+        assertEquals(0f, frame.blurRadiusPx)
+        assertEquals(0f, frame.scrimAlpha)
+        assertEquals(1f, frame.contentScale)
+    }
+
+    @Test
     fun androidBeforeSDisablesRealtimeBlurButKeepsOpeningScrim() {
         val opening = resolveVideoCardTransitionBackgroundFrame(
             progress = 1f,
